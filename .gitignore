@@ -1,45 +1,45 @@
 # Django (Python)
-*.pyc
-__pycache__/
-*.sqlite3
-*.pyo
-*.pyd
-*.db
-.env
-.env.local
-.env.dev
-.env.prod
-venv/
-env/
-.venv/
-*.log
-media/
-staticfiles/
-.DS_Store
+backend/*.pyc
+backend/__pycache__/
+backend/*.sqlite3
+backend/*.pyo
+backend/*.pyd
+backend/*.db
+backend/.env
+backend/.env.local
+backend/.env.dev
+backend/.env.prod
+backend/venv/
+backend/env/
+backend/.venv/
+backend/*.log
+backend/media/
+backend/staticfiles/
+backend/.DS_Store
 
 # Vue.js (Node.js)
-node_modules/
-dist/
-.temp/
-.cache/
-*.local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.vscode/
+frontend/node_modules/
+frontend/dist/
+frontend/.temp/
+frontend/.cache/
+frontend/*.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.vscode/
 
 # PyCharm
-.idea/
-*.iml
-*.ipr
-*.iws
+backend/.idea/
+backend/*.iml
+backend/*.ipr
+backend/*.iws
 
 # VSCode
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+frontend/.vscode/
+!frontend/.vscode/settings.json
+!frontend/.vscode/tasks.json
+!frontend/.vscode/launch.json
+!frontend/.vscode/extensions.json
 
 # Общие системные файлы
 .DS_Store
