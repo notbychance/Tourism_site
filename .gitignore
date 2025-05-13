@@ -1,0 +1,46 @@
+# Django (Python)
+*.pyc
+__pycache__/
+*.sqlite3
+*.pyo
+*.pyd
+*.db
+.env
+.env.local
+.env.dev
+.env.prod
+venv/
+env/
+.venv/
+*.log
+media/
+staticfiles/
+.DS_Store
+
+# Vue.js (Node.js)
+node_modules/
+dist/
+.temp/
+.cache/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Общие системные файлы
+.DS_Store
+Thumbs.db
