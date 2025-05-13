@@ -3,15 +3,17 @@ import itertools
 
 from rest_framework.routers import DefaultRouter
 from transliterate import slugify as transliterate_slugify
-
+from django.contrib.auth.models import BaseUserManager
 
 
 class SlugRouter(DefaultRouter):
     def get_lookup_regex(self, viewset, lookup_prefix=''):
-        return r'(?P<{lookup_prefix}{lookup_field}>[-\w]+)'.format(
-            lookup_prefix=lookup_prefix,
-            lookup_field=viewset.lookup_field
-        )
+        base_regex = super().get_lookup_regex(viewset, lookup_prefix)
+        if viewset.lookup_field == 'slug':
+            return r'(?P<{lookup_prefix}slug>[-\w]+)'.format(
+                lookup_prefix=lookup_prefix
+            )
+        return base_regex
 
 
 def unique_slugify(instance, slug_field, source_field):
@@ -28,3 +30,17 @@ def unique_slugify(instance, slug_field, source_field):
         unique_slug = f'{slug}-{i}'
 
     return unique_slug
+
+
+class CustomerManager(BaseUserManager):
+    def create_user(self, login, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('Email обязателен')
+        customer = self.model(
+            email=self.normalize_email(email),
+            login=login,
+            **extra_fields
+        )
+        customer.set_password(password)
+        customer.save(using=self._db)
+        return customer

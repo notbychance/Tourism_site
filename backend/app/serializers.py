@@ -1,4 +1,6 @@
+from django.utils import timezone
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from app.models import *
 
@@ -6,7 +8,7 @@ from app.models import *
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
-        exclude = ['id']
+        fields = '__all__'
         extra_kwargs = {
             'password': {'write_only': True},
         }
@@ -19,6 +21,16 @@ class CustomerSerializer(serializers.ModelSerializer):
             data.pop('password', None)
 
         return data
+
+    def validate_login(self, value):
+        if Customer.objects.filter(login=value).exists():
+            raise serializers.ValidationError("Логин уже занят")
+        return value
+
+    def validate_email(self, value):
+        if Customer.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email уже зарегистрирован")
+        return value
 
 
 class SocialMediaTypeSerializer(serializers.ModelSerializer):
@@ -39,7 +51,7 @@ class SocialMediaSerializer(serializers.ModelSerializer):
         exclude = ['id']
 
     def get_days_remaining(self, obj):
-        return (obj.date_to - datetime.datetime.now()).days
+        return (obj.date_to - timezone.now()).days
 
     def validate(self, data):
         request = self.context.get('request')
@@ -53,6 +65,12 @@ class SocialMediaSerializer(serializers.ModelSerializer):
 
 
 class CompanySerializer(serializers.ModelSerializer):
+    social_media = SocialMediaSerializer(
+        source='socialmedia_set',  # Указываем обратное отношение
+        many=True,
+        read_only=True
+    )
+
     class Meta:
         model = Company
         exclude = ['id']
@@ -69,7 +87,7 @@ class TourSerializer(serializers.ModelSerializer):
     def get_favourites_count(self, obj):
         if hasattr(obj, 'favourites_count'):
             return obj.favourites_count
-        return obj.favourites.count()
+        return obj.favourites_set.count()
 
     class Meta:
         model = Tour
@@ -101,3 +119,19 @@ class ReservationStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReservationStatus
         exclude = ['id']
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source='status.status', read_only=True)
+
+    class Meta:
+        model = Reservation
+        exclude = ['id']
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['login'] = user.login
+        return token

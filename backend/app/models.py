@@ -3,30 +3,26 @@ import datetime
 from django.core.validators import RegexValidator,MinLengthValidator
 from django.db import models
 from django.db.models.manager import Manager
+from django.contrib.auth.models import AbstractBaseUser
 
-from app.addons import unique_slugify
+from app.addons import unique_slugify, CustomerManager
 
 
 # Create your models here.
-class Customer(models.Model):
+class Customer(AbstractBaseUser):
     credentials = models.CharField(max_length=100)
-    email = models.EmailField()
-    login = models.CharField(max_length=50,
-                             validators=[
-                                 MinLengthValidator(5, message='Логин слишком короткий (мин. 5 символов)'),
-                                 RegexValidator(
+    email = models.EmailField(unique=True)
+    login = models.CharField(max_length=50, unique=True,
+                             validators=[RegexValidator(
                                      regex='^[a-zA-Z0-9_]+$',
                                      message='Логин может содержать только буквы, цифры и подчеркивания'
-                                 )], unique=True)
-    password = models.CharField(max_length=100)
-    phone = models.CharField(max_length=11,
-                             validators=[
-                                 RegexValidator(
-                                     regex=r'^\+?1?\d{9,15}$',
-                                     message="Номер телефона должен быть в формате: '+999999999'. Допускается до 15 цифр.")
-                             ])
+                                 )])  # ваши валидаторы
+    phone = models.CharField(max_length=15)
 
-    objects: Manager = models.Manager()
+    USERNAME_FIELD = 'login'
+    REQUIRED_FIELDS = ['email', 'credentials']
+
+    objects = CustomerManager()
 
     def __str__(self):
         return self.credentials
