@@ -56,7 +56,7 @@ class Company(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = unique_slugify(self, 'slug', self.name)
+            self.slug = unique_slugify(self, 'slug', 'name')
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -79,11 +79,16 @@ class SocialMedia(models.Model):
 class Tour(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100)
+    slug = models.SlugField(unique=True, blank=False, editable=False)
     img_preview_url = models.URLField()
     short_description = models.CharField(max_length=120)
 
     objects: Manager = models.Manager()
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slugify(self, 'slug', 'title')
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

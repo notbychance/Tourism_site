@@ -10,8 +10,8 @@ router = DefaultRouter()
 router.register(r'customer', CustomerViewSet, basename='customer')
 
 slug_router = SlugRouter()
-slug_router.register('company', CompanyViewSet, basename='company')
-slug_router.register('tour', TourViewSet, basename='tour')
+slug_router.register(r'company', CompanyViewSet, basename='company')
+slug_router.register(r'tour', TourViewSet, basename='tour')
 
 urlpatterns = [
     path('social-media-type/', SocialMediaTypeListView.as_view()),

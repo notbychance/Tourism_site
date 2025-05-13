@@ -66,10 +66,10 @@ class TourSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
     company_slug = serializers.CharField(source='company.slug', read_only=True)
 
-    def get_favourites(self, obj):
+    def get_favourites_count(self, obj):
         if hasattr(obj, 'favourites_count'):
-            return obj.favourites
-        return obj.favourites_set.count()
+            return obj.favourites_count
+        return obj.favourites.count()
 
     class Meta:
         model = Tour
