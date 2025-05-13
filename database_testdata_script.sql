@@ -30,15 +30,15 @@ INSERT INTO app_socialmediatype (type) VALUES
 ('Mix'),
 ('Periscope');
 
-INSERT INTO app_reservationstatus (status) VALUES
-('Оплачено'),
-('Отменено'),
-('Завершено'),
-('Клиент не явился'),
-('Ожидание оплаты'),
-('Возврат средств'),
-('Перенесено'),
-('Отклонено');
+INSERT INTO app_reservationstatus (status)
+VALUES 
+    ('paid'),
+    ('completed'), 
+    ('no_show'),
+    ('waiting'),
+    ('paid_back'),
+    ('moved'),
+    ('declined');
 
 -- Скрипт заполнения таблицы Company тестовыми данными
 INSERT INTO app_company (name, phone, address, slug) VALUES

@@ -55,18 +55,31 @@ class TourViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='full')
     def get_full_info(self, request):
+        desired_statuses = [ReservationStatus.PAID]
         tour = get_object_or_404(
                 Tour.objects.select_related('tourinfo', 'company')
                           .prefetch_related(Prefetch(
                 'tourtimespan_set',
-                queryset=TourTimeSpan.objects.order_by('date_from')
-            )).order_by('-date_to'),
+                queryset=TourTimeSpan.objects.order_by('-date_to')
+                .prefetch_related(
+                    Prefetch(
+                        'reservation_set',
+                        queryset=Reservation.objects
+                        .select_related('status')
+                        .filter(status__status__in=desired_statuses),
+                        to_attr='filtered_reservations'
+                    )
+                )
+                .annotate(
+                    places_released=Count('filtered_reservations')
+                )
+            )),
                 slug=self.kwargs['slug']
             )
         data = {
             'basic_info': TourSerializer(tour).data,
             'detailed_info': TourInfoSerializer(tour.tourinfo).data if hasattr(tour, 'tourinfo') else None,
-            'time_spans': TourTimeSpanSerializer(tour.tourtimespan_set.all(), many=True).data
+            'time_spans': TourTimeSpanSerializer(tour.tourtimespan_set.first(), many=True).data
         }
         return Response(data)
 

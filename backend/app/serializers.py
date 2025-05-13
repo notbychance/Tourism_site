@@ -85,6 +85,13 @@ class TourInfoSerializer(serializers.ModelSerializer):
         exclude = ['id']
 
 class TourTimeSpanSerializer(serializers.ModelSerializer):
+    places_released = serializers.SerializerMethodField(read_only=True)
+
+    def get_places_released(self, obj):
+        if hasattr(obj, 'places_released'):
+            return obj.places_released
+        return obj.reservation.count()
+
     class Meta:
         model = TourTimeSpan
         exclude = ['id']

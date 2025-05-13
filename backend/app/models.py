@@ -116,12 +116,32 @@ class TourTimeSpan(models.Model):
 
 
 class ReservationStatus(models.Model):
-    status = models.CharField(max_length=50, unique=True)
+    # Константы значений (хранятся в БД)
+    PAID = 'paid'
+    DECLINED = 'declined'
+    COMPLETED = 'completed'
+    WAITING = 'waiting'
+    MOVED = 'moved'
+    PAID_BACK = 'paid_back'
+    DIDNT_COME = 'no_show'
+
+    # Кортежи для choices (значение БД, отображаемое имя)
+    STATUS_CHOICES = [
+        (PAID, 'Оплачено'),
+        (COMPLETED, 'Завершено'),
+        (DIDNT_COME, 'Клиент не явился'),
+        (WAITING, 'Ожидание оплаты'),
+        (PAID_BACK, 'Возврат средств'),
+        (MOVED, 'Перенесено'),
+        (DECLINED, 'Отклонено')
+    ]
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, unique=True)
 
     objects: Manager = models.Manager()
 
     def __str__(self):
-        return self.status
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
 
 
 class Reservation(models.Model):
