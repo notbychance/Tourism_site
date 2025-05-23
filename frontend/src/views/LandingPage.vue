@@ -13,11 +13,14 @@
     <section class="destinations" ref="toursSection">
       <h2>Популярные направления</h2>
       <div class="cards">
-        <div v-for="(tour, index) in tours" :key="index" class="tour-card">
-          <img :src="tour.image" :alt="tour.name">
-          <h3>{{ tour.name }}</h3>
-          <p>{{ tour.description }}</p>
-          <span class="price">{{ tour.price }} ₽</span>
+        <div v-if="isLoading">Загрузка...</div>
+        <div v-else>
+          <div v-for="tour in tours" :key="tour.id" class="tour-card" @click="gotoURL(tour.slug)">
+            <img :src="tour.image" :alt="tour.title">
+            <h3>{{ tour.title }}</h3>
+            <p>{{ tour.short_description }}</p>
+            <span class="price">{{ tour.price.toLocaleString() }} ₽</span>
+          </div>
         </div>
       </div>
     </section>
@@ -45,35 +48,30 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue';
+<script>
+import { ref } from 'vue'
+import { api } from '../api/api.js'
 
-export default defineComponent({
+export default {
   name: 'LandingPage',
   setup() {
-    const toursSection = ref<HTMLElement | null>(null);
+    const toursSection = ref(null);
     const email = ref('');
-
-    const tours = [
-      {
-        name: 'Турция, Анталия',
-        description: 'Все включено 5*',
-        price: 45_000,
-        image: '/images/destinations/turkey.jpg'
-      },
-      {
-        name: 'Италия, Рим',
-        description: 'Экскурсионный тур',
-        price: 78_000,
-        image: '/images/destinations/italy.jpg'
-      },
-      {
-        name: 'Мальдивы',
-        description: 'Романтический отдых',
-        price: 120_000,
-        image: '/images/destinations/maldives.jpg'
+    const tours = ref([]);
+    const isLoading = ref(true);
+    
+    const fetchTours = async () => {
+      try {
+        isLoading.value = true;
+        const response = await api.get('/tour/popular');
+        tours.value = response.data;
+      } catch (err) {
+        console.error('Ошибка загрузки туров:', err);
+      } finally {
+        isLoading.value = false;
       }
-    ];
+    };
+    fetchTours();
 
     const benefits = [
       { icon: '✈️', title: 'Авиабилеты', text: 'Прямые рейсы от проверенных авиакомпаний' },
@@ -90,9 +88,13 @@ export default defineComponent({
       email.value = '';
     };
 
-    return { tours, benefits, email, toursSection, scrollToTours, submitForm };
+    const gotoURL = (slug) => {
+      window.location.href = `/${slug}`;
+    };
+
+    return { tours, isLoading, benefits, email, toursSection, scrollToTours, submitForm, gotoURL };
   }
-});
+};
 </script>
 
 <style scoped>
@@ -103,7 +105,7 @@ export default defineComponent({
 
 .hero {
   background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
-              url('/images/hero-bg.jpg') no-repeat center/cover;
+              url('../media/hero.jpeg') no-repeat center/cover;
   height: 100vh;
   display: flex;
   align-items: center;
@@ -166,6 +168,7 @@ h2 {
   overflow: hidden;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s;
+  cursor: pointer;
 }
 
 .tour-card:hover {

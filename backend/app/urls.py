@@ -16,6 +16,9 @@ slug_router.register(r'tour', TourViewSet, basename='tour')
 urlpatterns = [
     path('social-media-type/', SocialMediaTypeListView.as_view()),
     path('reservation-status-type/', ReservationStatusListView.as_view()),
+    path('register/', CustomerRegistrationView.as_view(), name='register'),
+    path('token/', CustomerTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 urlpatterns += router.urls

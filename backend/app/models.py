@@ -77,6 +77,7 @@ class Tour(models.Model):
     title = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=False, editable=False)
     img_preview_url = models.URLField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     short_description = models.CharField(max_length=120)
 
     objects: Manager = models.Manager()
@@ -93,7 +94,6 @@ class Tour(models.Model):
 class TourInfo(models.Model):
     tour = models.OneToOneField(Tour, on_delete=models.CASCADE)
     description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
     img_url = models.URLField()
     img_background_url = models.URLField()
     placed = models.TextField()
