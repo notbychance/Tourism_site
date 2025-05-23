@@ -91,7 +91,7 @@ class TourViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='popular')
     def get_popular_tours(self, request):
-        popular_tours = self.get_queryset().order_by('-favourites_count')[:5]
+        popular_tours = self.get_queryset().order_by('-favourites_count')[:7]
         serializer = self.get_serializer(popular_tours, many=True)
         return Response(serializer.data)
 

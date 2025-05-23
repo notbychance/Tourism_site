@@ -11,18 +11,10 @@
 
     <!-- Популярные направления -->
     <section class="destinations" ref="toursSection">
-      <h2>Популярные направления</h2>
-      <div class="cards">
-        <div v-if="isLoading">Загрузка...</div>
-        <div v-else>
-          <div v-for="tour in tours" :key="tour.id" class="tour-card" @click="gotoURL(tour.slug)">
-            <img :src="tour.image" :alt="tour.title">
-            <h3>{{ tour.title }}</h3>
-            <p>{{ tour.short_description }}</p>
-            <span class="price">{{ tour.price.toLocaleString() }} ₽</span>
-          </div>
-        </div>
-      </div>
+      <h2>Популярные туры</h2>
+      <div v-if="isLoading" class="loading">Загрузка...</div>
+      <div v-else-if="error" class="error">{{ error }}</div>
+      <TourSlider v-else :tours="tours" @tour-click="gotoURL" />
     </section>
 
     <!-- Преимущества -->
@@ -36,77 +28,80 @@
         </div>
       </div>
     </section>
-
-    <!-- Контакты -->
-    <section class="contacts">
-      <h2>Остались вопросы?</h2>
-      <form @submit.prevent="submitForm">
-        <input v-model="email" type="email" placeholder="Ваш email">
-        <button type="submit">Отправить</button>
-      </form>
-    </section>
   </div>
 </template>
 
-<script>
-import { ref } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
+import TourSlider from '../components/Slider.vue'
 import { api } from '../api/api.js'
 
-export default {
-  name: 'LandingPage',
-  setup() {
-    const toursSection = ref(null);
-    const email = ref('');
-    const tours = ref([]);
-    const isLoading = ref(true);
-    
-    const fetchTours = async () => {
-      try {
-        isLoading.value = true;
-        const response = await api.get('/tour/popular');
-        tours.value = response.data;
-      } catch (err) {
-        console.error('Ошибка загрузки туров:', err);
-      } finally {
-        isLoading.value = false;
-      }
-    };
-    fetchTours();
+const toursSection = ref(null)
+const email = ref('')
+const tours = ref([])
+const isLoading = ref(true)
+const error = ref(null)
 
-    const benefits = [
-      { icon: '✈️', title: 'Авиабилеты', text: 'Прямые рейсы от проверенных авиакомпаний' },
-      { icon: '🏨', title: 'Отели', text: 'Только лучшие отели с высоким рейтингом' },
-      { icon: '🛡️', title: 'Страховка', text: 'Медицинская страховка в подарок' }
-    ];
-
-    const scrollToTours = () => {
-      toursSection.value?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    const submitForm = () => {
-      alert(`Спасибо! Мы свяжемся с вами на ${email.value}`);
-      email.value = '';
-    };
-
-    const gotoURL = (slug) => {
-      window.location.href = `/${slug}`;
-    };
-
-    return { tours, isLoading, benefits, email, toursSection, scrollToTours, submitForm, gotoURL };
+// Загрузка туров
+const fetchTours = async () => {
+  try {
+    const response = await api.get('/tour/popular')
+    tours.value = response.data
+  } catch (err) {
+    console.error('Ошибка загрузки туров:', err)
+    error.value = 'Не удалось загрузить популярные туры'
+  } finally {
+    isLoading.value = false
   }
-};
+}
+
+onMounted(() => {
+  fetchTours()
+})
+
+const benefits = ref([
+  { icon: '✈️', title: 'Авиабилеты', text: 'Прямые рейсы от проверенных авиакомпаний' },
+  { icon: '🏨', title: 'Отели', text: 'Только лучшие отели с высоким рейтингом' },
+  { icon: '🛡️', title: 'Страховка', text: 'Медицинская страховка в подарок' }
+])
+
+const scrollToTours = () => {
+  toursSection.value?.scrollIntoView({ behavior: 'smooth' })
+}
+
+const submitForm = () => {
+  alert(`Спасибо! Мы свяжемся с вами на ${email.value}`)
+  email.value = ''
+}
+
+const gotoURL = (slug) => {
+  window.location.href = `/${slug}`
+}
+
+const handleImageError = (event) => {
+  const defaultImage = '/images/default-tour.jpg'
+  if (event.target.src !== defaultImage) {
+    event.target.src = defaultImage
+  }
+}
 </script>
 
 <style scoped>
 .landing {
   font-family: 'Arial', sans-serif;
   color: #333;
+  height: 100vh;
+  width: 100vw;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
 }
 
 .hero {
-  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
-              url('../media/hero.jpeg') no-repeat center/cover;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+    url('../media/hero.jpeg') no-repeat center/cover;
   height: 100vh;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -147,46 +142,24 @@ export default {
 
 section {
   padding: 80px 20px;
+  height: 100vh;
+  scroll-snap-align: start;
+  width: 100vw;
   text-align: center;
+}
+
+.benefits,
+.destinations,
+.contacts {
+  position: relative;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
 }
 
 h2 {
   font-size: 2.5rem;
   margin-bottom: 50px;
-}
-
-.cards {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-  flex-wrap: wrap;
-}
-
-.tour-card {
-  width: 300px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
-  cursor: pointer;
-}
-
-.tour-card:hover {
-  transform: translateY(-10px);
-}
-
-.tour-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.price {
-  display: block;
-  font-weight: bold;
-  color: #ff5722;
-  font-size: 1.2rem;
-  margin-top: 10px;
 }
 
 .benefits-grid {
@@ -195,6 +168,7 @@ h2 {
   gap: 30px;
   max-width: 1200px;
   margin: 0 auto;
+  justify-content: center;
 }
 
 .benefit {
@@ -204,29 +178,5 @@ h2 {
 .icon {
   font-size: 2.5rem;
   margin-bottom: 20px;
-}
-
-form {
-  max-width: 500px;
-  margin: 0 auto;
-  display: flex;
-}
-
-input {
-  width: 70%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 30px 0 0 30px;
-  outline: none;
-}
-
-button[type="submit"] {
-  width: 30%;
-  padding: 12px;
-  background: #ff5722;
-  color: white;
-  border: none;
-  border-radius: 0 30px 30px 0;
-  cursor: pointer;
 }
 </style>
