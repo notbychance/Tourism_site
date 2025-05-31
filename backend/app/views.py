@@ -4,20 +4,23 @@ from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework.pagination import PageNumberPagination
+from django_filters.rest_framework import DjangoFilterBackend
 
 from app.models import *
 from app.serializers import *
+from app.filters import *
 
 
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 
-    # def list(self, request, *args, **kwargs):
-    #     return Response(
-    #         {"detail": "Listing all customers is not allowed."},
-    #         status=status.HTTP_403_FORBIDDEN
-    #     )
+    def list(self, request, *args, **kwargs):
+        return Response(
+            {"detail": "Listing all customers is not allowed."},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
 
 class SocialMediaTypeListView(generics.ListAPIView):
@@ -28,6 +31,11 @@ class SocialMediaTypeListView(generics.ListAPIView):
 class ReservationStatusListView(generics.ListAPIView):
     queryset = ReservationStatus.objects.all()
     serializer_class = ReservationStatusSerializer
+    
+    
+class CountryListView(generics.ListAPIView):
+    queryset = Country.objects.all()
+    serializer_class = CountrySerializer
 
 
 class SocialMediaViewSet(viewsets.ModelViewSet):
@@ -49,10 +57,13 @@ class CompanyViewSet(viewsets.ModelViewSet):
 class TourViewSet(viewsets.ModelViewSet):
     queryset = Tour.objects.annotate(
         favourites_count=Count('favourites')
-    ).select_related('company')
+    ).select_related('company', 'country')
     serializer_class = TourSerializer
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
+    pagination_class = PageNumberPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TourFilter
 
     @action(detail=True, methods=['get'], url_path='full')
     def get_full_info(self, request, slug=None):
@@ -60,7 +71,8 @@ class TourViewSet(viewsets.ModelViewSet):
 
         tour = Tour.objects.filter(slug=slug).select_related(
             'tourinfo',
-            'company'
+            'company',
+            'country'
         ).prefetch_related(
             Prefetch(
                 'tourtimespan_set',

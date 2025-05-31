@@ -5,7 +5,8 @@
       <div class="hero-content">
         <h1 class="title">Откройте мир с нами!</h1>
         <p class="subtitle">Лучшие туры по выгодным ценам</p>
-        <button @click="scrollToTours" class="cta-button">Выбрать тур</button>
+        <!-- <button @click="router.push('/tours')" class="cta-button">Смотреть все туры</button> -->
+        <router-link :to="{ name: 'tours' }" class="cta-button">Смотреть все туры</router-link>
       </div>
     </section>
 
@@ -28,19 +29,25 @@
         </div>
       </div>
     </section>
+
+    <Footer :companyName="'TravelApp'" :email="'smth@gmail.com'" :phone="'+7-(999)-999-99-99'" :adrres="'Близжайшая мусорная яма'"/>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import TourSlider from '../components/Slider.vue'
+import Footer from '../components/Footer.vue'
 import { api } from '../api/api.js'
+import { useRouter } from 'vue-router'
 
 const toursSection = ref(null)
 const email = ref('')
 const tours = ref([])
 const isLoading = ref(true)
 const error = ref(null)
+
+const router = useRouter()
 
 // Загрузка туров
 const fetchTours = async () => {
@@ -75,7 +82,7 @@ const submitForm = () => {
 }
 
 const gotoURL = (slug) => {
-  window.location.href = `/${slug}`
+  router.push(`/tours/${slug}`)
 }
 
 const handleImageError = (event) => {
@@ -92,16 +99,13 @@ const handleImageError = (event) => {
   color: #333;
   height: 100vh;
   width: 100vw;
-  overflow-y: scroll;
-  scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
 }
 
 .hero {
   background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-    url('../media/hero.jpeg') no-repeat center/cover;
+    url('../assets/hero.jpeg') no-repeat center/cover;
   height: 100vh;
-  width: 100%;
+  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,11 +145,11 @@ const handleImageError = (event) => {
 }
 
 section {
-  padding: 80px 20px;
-  height: 100vh;
-  scroll-snap-align: start;
+  /* padding: 80px 20px; */
   width: 100vw;
   text-align: center;
+  align-items: center;
+  justify-content: center;
 }
 
 .benefits,

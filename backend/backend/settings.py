@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'app',
     'rest_framework',
     'corsheaders',
-    'rest_framework_simplejwt'
+    'rest_framework_simplejwt',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -138,6 +139,9 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
     ],
     'PAGE_SIZE': 10,
 }

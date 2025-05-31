@@ -1,6 +1,6 @@
 import datetime
 
-from django.core.validators import RegexValidator,MinLengthValidator
+from django.core.validators import RegexValidator, MinLengthValidator
 from django.db import models
 from django.db.models.manager import Manager
 from django.contrib.auth.models import AbstractBaseUser
@@ -14,9 +14,9 @@ class Customer(AbstractBaseUser):
     email = models.EmailField(unique=True)
     login = models.CharField(max_length=50, unique=True,
                              validators=[RegexValidator(
-                                     regex='^[a-zA-Z0-9_]+$',
-                                     message='Логин может содержать только буквы, цифры и подчеркивания'
-                                 )])  # ваши валидаторы
+                                 regex='^[a-zA-Z0-9_]+$',
+                                 message='Логин может содержать только буквы, цифры и подчеркивания'
+                             )])  # ваши валидаторы
     phone = models.CharField(max_length=15)
 
     USERNAME_FIELD = 'login'
@@ -72,6 +72,15 @@ class SocialMedia(models.Model):
         super().save(*args, **kwargs)
 
 
+class Country(models.Model):
+    name = models.CharField(max_length=120, unique=True)
+
+    objects: Manager = models.Manager()
+
+    def __str__(self):
+        return self.name
+
+
 class Tour(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
@@ -79,6 +88,7 @@ class Tour(models.Model):
     img_preview_url = models.URLField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     short_description = models.CharField(max_length=120)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
 
     objects: Manager = models.Manager()
 
@@ -132,7 +142,8 @@ class ReservationStatus(models.Model):
         (DECLINED, 'Отклонено')
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, unique=True)
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, unique=True)
 
     objects: Manager = models.Manager()
 

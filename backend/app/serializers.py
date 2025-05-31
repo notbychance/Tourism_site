@@ -43,7 +43,8 @@ class SocialMediaTypeSerializer(serializers.ModelSerializer):
 
 
 class SocialMediaSerializer(serializers.ModelSerializer):
-    media_type_name = serializers.CharField(source='media_type.type', read_only=True)
+    media_type_name = serializers.CharField(
+        source='media_type.type', read_only=True)
     days_remaining = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -83,6 +84,7 @@ class TourSerializer(serializers.ModelSerializer):
     favourites_count = serializers.SerializerMethodField(read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
     company_slug = serializers.CharField(source='company.slug', read_only=True)
+    country_name = serializers.CharField(source='country.name', read_only=True)
 
     def get_favourites_count(self, obj):
         if hasattr(obj, 'favourites_count'):
@@ -101,6 +103,7 @@ class TourInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = TourInfo
         exclude = ['id']
+
 
 class TourTimeSpanSerializer(serializers.ModelSerializer):
     places_released = serializers.SerializerMethodField(read_only=True)
@@ -135,3 +138,12 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
         token['login'] = user.login
         return token
+
+
+class CountrySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        exclude = ['id']
+        extra_kwargs = {
+            'name': {'read_only': True},
+        }
