@@ -9,20 +9,27 @@ from app.addons import unique_slugify, CustomerManager
 
 
 # Create your models here.
-class Customer(AbstractBaseUser):
+class Customer(models.Model):
     credentials = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     login = models.CharField(max_length=50, unique=True,
                              validators=[RegexValidator(
                                  regex='^[a-zA-Z0-9_]+$',
                                  message='Логин может содержать только буквы, цифры и подчеркивания'
-                             )])  # ваши валидаторы
-    phone = models.CharField(max_length=15)
-
-    USERNAME_FIELD = 'login'
-    REQUIRED_FIELDS = ['email', 'credentials']
+                             )])
+    password_hash = models.CharField(max_length=128)
 
     objects = CustomerManager()
+    
+    def set_password(self, raw_password):
+        """Хеширует и сохраняет пароль."""
+        from django.contrib.auth.hashers import make_password
+        self.password_hash = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        """Проверяет пароль."""
+        from django.contrib.auth.hashers import check_password
+        return check_password(raw_password, self.password_hash)
 
     def __str__(self):
         return self.credentials
@@ -47,6 +54,8 @@ class Company(models.Model):
                              ])
     address = models.TextField()
     slug = models.SlugField(unique=True, blank=False, editable=False)
+    description = models.TextField()
+    image = models.URLField()
 
     objects: Manager = models.Manager()
 

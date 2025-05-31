@@ -1,384 +1,429 @@
 <template>
     <Header />
 
-    <div class="tours-page">
-        <!-- Фильтры -->
-        <div class="filters-section">
-            <div class="filter-group">
-                <h3>Фильтры</h3>
+    <div class="tour-page">
+        <!-- Хлебные крошки -->
+        <!-- <nav class="breadcrumbs">
+      <router-link to="/">Главная</router-link> /
+      <router-link :to="`/country/${tour.basic_info.country_slug}`">{{ tour.basic_info.country_name }}</router-link> /
+      <router-link :to="`/company/${tour.basic_info.company_slug}`">{{ tour.basic_info.company_name }}</router-link> /
+      <span>{{ tour.basic_info.title }}</span>
+    </nav> -->
 
-                <!-- Фильтр по странам -->
-                <div class="filter-item">
-                    <label>Страны:</label>
-                    <multiselect v-model="selectedCountries" :options="availableCountries" :multiple="true"
-                        :close-on-select="false" placeholder="Выберите страны" label="name" track-by="id" />
+        <!-- Основная информация -->
+        <section class="tour-header">
+            <div class="tour-images">
+                <img :src="tour.detailed_info.img_background_url" :alt="tour.basic_info.title" class="background-image">
+                <img :src="tour.detailed_info.img_url" :alt="tour.basic_info.title" class="main-image">
+            </div>
+
+            <div class="tour-basic-info">
+                <h1>{{ tour.basic_info.title }}</h1>
+                <div class="meta-info">
+                    <span class="company">
+                        <router-link :to="`/company/${tour.basic_info.company_slug}`">
+                            {{ tour.basic_info.company_name }}
+                        </router-link>
+                    </span>
+                    <span class="country">
+                        <router-link :to="`/country/${tour.basic_info.country_slug}`">
+                            {{ tour.basic_info.country_name }}
+                        </router-link>
+                    </span>
+                    <span class="favorites">
+                        ♡ {{ tour.basic_info.favourites_count }}
+                    </span>
                 </div>
 
-                <!-- Ценовой диапазон -->
-                <div class="filter-item">
-                    <label>Ценовой диапазон:</label>
-                    <div class="price-range">
-                        <input type="number" v-model.number="minPrice" placeholder="От">
-                        <span>-</span>
-                        <input type="number" v-model.number="maxPrice" placeholder="До">
-                    </div>
+                <div class="short-description">
+                    {{ tour.basic_info.short_description }}
                 </div>
 
-                <!-- Кнопка применения фильтров -->
-                <button class="apply-btn" @click="applyFilters">Применить фильтры</button>
+                <div class="price-section">
+                    <div class="price">{{ formatPrice(tour.basic_info.price) }} ₽</div>
+                    <button class="book-button" @click="openBookingModal">Забронировать</button>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Список туров -->
-        <div class="tours-container">
-            <!-- Поиск -->
-            <div class="search-box">
-                <input type="text" v-model="searchQuery" placeholder="Поиск по названию или описанию"
-                    @input="handleSearch">
-            </div>
+        <!-- Детальная информация -->
+        <section class="tour-details">
+            <div class="details-column">
+                <h2>Описание тура</h2>
+                <p class="description">{{ tour.detailed_info.description }}</p>
 
-            <!-- Загрузка -->
-            <div v-if="loading" class="loading">Загрузка туров...</div>
-
-            <!-- Сообщение если ничего не найдено -->
-            <div v-if="!loading && tours?.length === 0" class="no-results">
-                Туры не найдены. Попробуйте изменить параметры поиска.
-            </div>
-
-            <!-- Список туров -->
-            <div class="tour-list">
-                <div v-for="tour in tours" :key="tour.id" class="tour-card">
-                    <div class="tour-image">
-                        <img :src="tour.image" :alt="tour.title">
-                    </div>
-                    <div class="tour-info">
-                        <h3>{{ tour.title }}</h3>
-                        <p class="tour-description">{{ tour.short_description }}</p>
-                        <div class="tour-meta">
-                            <span class="tour-country">{{ tour.country.name }}</span>
-                            <span class="tour-price">{{ tour.price }} ₽</span>
-                        </div>
-                        <button class="details-btn">Подробнее</button>
-                    </div>
+                <h2>Места посещения</h2>
+                <div class="places">
+                    {{ tour.detailed_info.placed }}
                 </div>
             </div>
 
-            <!-- Кнопка загрузки следующих туров -->
-            <div class="load-more">
-                <button v-if="hasNextPage" @click="loadMoreTours" :disabled="loadingMore">
-                    {{ loadingMore ? 'Загрузка...' : 'Показать еще' }}
-                </button>
+            <div class="timing-column">
+                <h2>Даты и места</h2>
+                <div class="timing-info">
+                    <div class="timing-item">
+                        <span class="label">Дата начала:</span>
+                        <span class="value">{{ formatDate(tour.time_spans.date_from) }}</span>
+                    </div>
+                    <div class="timing-item">
+                        <span class="label">Дата окончания:</span>
+                        <span class="value">{{ formatDate(tour.time_spans.date_to) }}</span>
+                    </div>
+                    <div class="timing-item">
+                        <span class="label">Группа:</span>
+                        <span class="value">{{ tour.time_spans.group_name }}</span>
+                    </div>
+                    <div class="timing-item">
+                        <span class="label">Свободных мест:</span>
+                        <span class="value">{{ tour.time_spans.place_count - tour.time_spans.places_released }}</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="favorite-button" @click="toggleFavorite">
+                        {{ isFavorite ? '★ В избранном' : '☆ Добавить в избранное' }}
+                    </button>
+                    <button class="share-button" @click="shareTour">
+                        Поделиться
+                    </button>
+                </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Модальное окно бронирования -->
+        <!-- <BookingModal 
+      v-if="showBookingModal"
+      :tour="tour"
+      @close="closeBookingModal"
+    /> -->
     </div>
 
-    <Footer :companyName="'TravelApp'" :email="'smth@gmail.com'" :phone="'+7-(999)-999-99-99'" :adrres="'Близжайшая мусорная яма'"/>
+    <Footer :companyName="'TravelApp'" :email="'smth@gmail.com'" :phone="'+7-(999)-999-99-99'"
+        :adrres="'Близжайшая мусорная яма'" />
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
-import api from '../api/api.js';
-import Multiselect from 'vue-multiselect';
-import Header from '../components/Header.vue';
-import Footer from '../components/Footer.vue';
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { api, authApi } from '../api/api.js'
+import Header from '../components/Header.vue'
+import Footer from '../components/Footer.vue'
+// import BookingModal from '@/components/BookingModal.vue'
 
-// Данные
-const tours = ref([]);
-const availableCountries = ref([]);
-const selectedCountries = ref([]);
-const minPrice = ref(null);
-const maxPrice = ref(null);
-const searchQuery = ref('');
-const currentPage = ref(1);
-const hasNextPage = ref(false);
-const loading = ref(false);
-const loadingMore = ref(false);
-const filtersApplied = ref(false);
+const route = useRoute()
+const tour = ref({
+    basic_info: {},
+    detailed_info: {},
+    time_spans: {}
+})
+const isLoading = ref(true)
+const error = ref(null)
+const isFavorite = ref(false)
+const showBookingModal = ref(false)
 
-// Загрузка начальных данных
-const fetchInitialData = async () => {
+const fetchTour = async () => {
     try {
-        loading.value = true;
-
-        // Параллельно получаем страны и туры
-        const [countriesRes, toursRes] = await Promise.all([
-            api.get('/country'),
-            api.get('/tour', {
-                params: { page: currentPage.value }
-            })
-        ]);
-
-        availableCountries.value = countriesRes.data;
-        tours.value = toursRes.data.results;
-        hasNextPage.value = Boolean(toursRes.data.next);
-    } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
+        const response = await api.get(`/tour/${route.params.slug}/full`)
+        tour.value = response.data
+        checkFavoriteStatus()
+    } catch (err) {
+        error.value = 'Не удалось загрузить информацию о туре'
     } finally {
-        loading.value = false;
+        isLoading.value = false
     }
-};
+}
 
-// Применение фильтров
-const applyFilters = async () => {
+const checkFavoriteStatus = async () => {
     try {
-        currentPage.value = 1;
-        filtersApplied.value = true;
-        loading.value = true;
-
-        const params = buildParams();
-        const response = await api.get('/tour', { params });
-
-        tours.value = response.data.results;
-        hasNextPage.value = Boolean(response.data.next);
-    } catch (error) {
-        console.error('Ошибка фильтрации:', error);
-    } finally {
-        loading.value = false;
+        const response = await authApi.get(`/tour/${tour.value.basic_info.slug}/favorite/`)
+        isFavorite.value = response.data.is_favorite
+    } catch (err) {
+        console.error('Ошибка проверки избранного:', err)
     }
-};
+}
 
-// Поиск с дебаунсом
-let searchTimeout = null;
-const handleSearch = () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        applyFilters();
-    }, 500);
-};
-
-// Загрузка следующих туров
-const loadMoreTours = async () => {
+const toggleFavorite = async () => {
     try {
-        loadingMore.value = true;
-        currentPage.value += 1;
-
-        const params = buildParams();
-        params.page = currentPage.value;
-
-        const response = await api.get('/tour', { params });
-
-        tours.value = [...tours.value, ...response.data.results];
-        hasNextPage.value = Boolean(response.data.next);
-    } catch (error) {
-        console.error('Ошибка загрузки:', error);
-        currentPage.value -= 1;
-    } finally {
-        loadingMore.value = false;
+        const method = isFavorite.value ? 'delete' : 'post'
+        await api[method](`/api/tours/${tour.value.basic_info.slug}/favorite/`)
+        isFavorite.value = !isFavorite.value
+        // Обновляем счетчик
+        if (isFavorite.value) {
+            tour.value.basic_info.favourites_count++
+        } else {
+            tour.value.basic_info.favourites_count--
+        }
+    } catch (err) {
+        console.error('Ошибка изменения избранного:', err)
     }
-};
+}
 
-// Построение параметров запроса
-const buildParams = () => {
-    const params = {};
-
-    if (selectedCountries.value.length > 0) {
-        params.country = selectedCountries.value.map(c => c.id).join(',');
+const shareTour = () => {
+    if (navigator.share) {
+        navigator.share({
+            title: tour.value.basic_info.title,
+            text: tour.value.basic_info.short_description,
+            url: window.location.href
+        }).catch(err => console.log('Ошибка sharing:', err))
+    } else {
+        // Fallback для браузеров без поддержки Web Share API
+        alert('Скопируйте ссылку из адресной строки')
     }
+}
 
-    if (minPrice.value !== null) {
-        params.min_price = minPrice.value;
-    }
+const formatPrice = (price) => {
+    return new Intl.NumberFormat('ru-RU').format(parseFloat(price))
+}
 
-    if (maxPrice.value !== null) {
-        params.max_price = maxPrice.value;
-    }
+const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' }
+    return new Date(dateString).toLocaleDateString('ru-RU', options)
+}
 
-    if (searchQuery.value.trim() !== '') {
-        params.search = searchQuery.value.trim();
-    }
+const openBookingModal = () => {
+    showBookingModal.value = true
+}
 
-    return params;
-};
+const closeBookingModal = () => {
+    showBookingModal.value = false
+}
 
-onMounted(fetchInitialData);
+onMounted(fetchTour)
 </script>
 
 <style scoped>
-.tours-page {
-    display: flex;
+.tour-page {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    gap: 30px;    
-    min-height: calc(100vh - 300px);
 }
 
-.filters-section {
-    flex: 0 0 250px;
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    height: fit-content;
-}
-
-.filter-group h3 {
-    margin-top: 0;
+.breadcrumbs {
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    color: #666;
 }
 
-.filter-item {
-    margin-bottom: 20px;
+.breadcrumbs a {
+    color: #ff5722;
+    text-decoration: none;
 }
 
-.filter-item label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
+.breadcrumbs a:hover {
+    text-decoration: underline;
 }
 
-.price-range {
+.tour-header {
     display: flex;
-    gap: 10px;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.tour-images {
+    position: relative;
+    flex: 1;
+    min-height: 400px;
+}
+
+.background-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    filter: brightness(0.7);
+}
+
+.main-image {
+    position: absolute;
+    bottom: -30px;
+    right: -30px;
+    width: 60%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 8px;
+    border: 3px solid white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.tour-basic-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+h1 {
+    font-size: 2.2rem;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.meta-info {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.meta-info a {
+    color: #ff5722;
+    text-decoration: none;
+}
+
+.meta-info a:hover {
+    text-decoration: underline;
+}
+
+.favorites {
+    margin-left: auto;
+}
+
+.short-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    color: #444;
+}
+
+.price-section {
+    margin-top: auto;
+    display: flex;
     align-items: center;
+    gap: 20px;
 }
 
-.price-range input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.price {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #ff5722;
 }
 
-.apply-btn {
-    width: 100%;
-    padding: 10px;
-    background: #42b983;
+.book-button {
+    padding: 12px 25px;
+    background-color: #ff5722;
     color: white;
     border: none;
     border-radius: 4px;
+    font-size: 1rem;
     cursor: pointer;
-    font-weight: 500;
-    transition: background 0.3s;
+    transition: background-color 0.3s;
 }
 
-.apply-btn:hover {
-    background: #359a6d;
+.book-button:hover {
+    background-color: #e64a19;
 }
 
-.tours-container {
+.tour-details {
+    display: flex;
+    gap: 40px;
+    margin-top: 50px;
+}
+
+.details-column {
+    flex: 2;
+}
+
+.timing-column {
     flex: 1;
 }
 
-.search-box {
-    margin-bottom: 20px;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-.tour-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 25px;
-}
-
-.tour-card {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s;
-}
-
-.tour-card:hover {
-    transform: translateY(-5px);
-}
-
-.tour-image img {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-}
-
-.tour-info {
-    padding: 15px;
-}
-
-.tour-info h3 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    font-size: 18px;
-}
-
-.tour-description {
-    color: #555;
-    font-size: 14px;
+h2 {
+    font-size: 1.5rem;
     margin-bottom: 15px;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 8px;
 }
 
-.tour-meta {
+.description {
+    line-height: 1.7;
+    margin-bottom: 30px;
+    color: #555;
+}
+
+.places {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    line-height: 1.6;
+}
+
+.timing-info {
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.timing-item {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 15px;
-    font-size: 14px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
 }
 
-.tour-country {
-    background: #eaf6ff;
-    padding: 3px 8px;
-    border-radius: 4px;
+.timing-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
-.tour-price {
-    font-weight: bold;
-    color: #42b983;
+.label {
+    font-weight: 500;
+    color: #666;
 }
 
-.details-btn {
-    width: 100%;
-    padding: 8px;
-    background: #3498db;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.3s;
+.value {
+    font-weight: 600;
+    color: #333;
 }
 
-.details-btn:hover {
-    background: #2980b9;
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
 }
 
-.load-more {
-    margin-top: 30px;
-    text-align: center;
-}
-
-.load-more button {
-    padding: 10px 25px;
-    background: #f1f1f1;
-    border: none;
+.favorite-button,
+.share-button {
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    background: white;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background 0.3s;
+    transition: all 0.3s;
 }
 
-.load-more button:hover:not(:disabled) {
-    background: #e0e0e0;
+.favorite-button {
+    color: #ff5722;
+    border-color: #ff5722;
 }
 
-.load-more button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
+.favorite-button:hover {
+    background: #fff0e6;
 }
 
-.loading,
-.no-results {
-    text-align: center;
-    padding: 40px;
-    font-size: 18px;
-    color: #777;
+.share-button:hover {
+    background: #f5f5f5;
+}
+
+@media (max-width: 768px) {
+    .tour-header {
+        flex-direction: column;
+    }
+
+    .tour-details {
+        flex-direction: column;
+    }
+
+    .main-image {
+        position: relative;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        max-width: none;
+        margin-top: 20px;
+    }
 }
 </style>

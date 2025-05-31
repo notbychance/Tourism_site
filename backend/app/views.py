@@ -12,15 +12,15 @@ from app.serializers import *
 from app.filters import *
 
 
-class CustomerViewSet(viewsets.ModelViewSet):
-    queryset = Customer.objects.all()
-    serializer_class = CustomerSerializer
+# class CustomerViewSet(viewsets.ModelViewSet):
+#     queryset = Customer.objects.all()
+#     serializer_class = CustomerSerializer
 
-    def list(self, request, *args, **kwargs):
-        return Response(
-            {"detail": "Listing all customers is not allowed."},
-            status=status.HTTP_403_FORBIDDEN
-        )
+#     def list(self, request, *args, **kwargs):
+#         return Response(
+#             {"detail": "Listing all customers is not allowed."},
+#             status=status.HTTP_403_FORBIDDEN
+#         )
 
 
 class SocialMediaTypeListView(generics.ListAPIView):
@@ -31,8 +31,8 @@ class SocialMediaTypeListView(generics.ListAPIView):
 class ReservationStatusListView(generics.ListAPIView):
     queryset = ReservationStatus.objects.all()
     serializer_class = ReservationStatusSerializer
-    
-    
+
+
 class CountryListView(generics.ListAPIView):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
@@ -46,8 +46,8 @@ class SocialMediaViewSet(viewsets.ModelViewSet):
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.prefetch_related(
         Prefetch('socialmedia_set',
-                queryset=SocialMedia.objects.select_related('media_type')
-                )
+                 queryset=SocialMedia.objects.select_related('media_type')
+                 )
     )
     serializer_class = CompanySerializer
     lookup_field = 'slug'
@@ -79,7 +79,8 @@ class TourViewSet(viewsets.ModelViewSet):
                 queryset=TourTimeSpan.objects.order_by('-date_to').annotate(
                     places_released=Count(
                         'reservation',
-                        filter=Q(reservation__status__status__in=desired_statuses)
+                        filter=Q(
+                            reservation__status__status__in=desired_statuses)
                     )
                 ).prefetch_related(
                     Prefetch(
@@ -114,25 +115,54 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
 
 class CustomerRegistrationView(generics.CreateAPIView):
-    serializer_class = CustomerSerializer
+    serializer_class = CustomerRegistrationSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        customer = serializer.save()
 
-        customer = Customer.objects.create_user(
-            login=serializer.validated_data['login'],
-            email=serializer.validated_data['email'],
-            password=serializer.validated_data['password'],
-            credentials=serializer.validated_data['credentials'],
-            phone=serializer.validated_data['phone']
-        )
+        # Генерация токенов
+        refresh = RefreshToken.for_user(customer)
 
-        return Response({
-            'message': 'Пользователь успешно зарегистрирован',
-            'login': customer.login
-        }, status=status.HTTP_201_CREATED)
+        response_data = {
+            'message': 'Регистрация успешна',
+            'customer': {
+                'credentials': customer.credentials,
+                'email': customer.email,
+                'login': customer.login
+            },
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        }
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
-class CustomerTokenObtainPairView(TokenObtainPairView):
-    serializer_class = MyTokenObtainPairSerializer
+class CustomerLoginView(generics.GenericAPIView):
+    serializer_class = CustomerLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        customer = serializer.validated_data['customer']
+
+        # Генерация токенов
+        refresh = MyTokenObtainPairSerializer.get_token(customer)
+
+        response_data = {
+            'message': 'Вход выполнен успешно',
+            'customer': {
+                'credentials': customer.credentials,
+                'email': customer.email,
+                'login': customer.login
+            },
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
