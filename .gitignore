@@ -24,3 +24,4 @@ frontend/.vscode/
 
 # Общие системные файлы
 *.bat
+*.sql
