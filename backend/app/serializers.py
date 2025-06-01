@@ -136,3 +136,14 @@ class CountrySerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'name': {'read_only': True},
         }
+
+
+class FavouriteSerializer(serializers.ModelSerializer):
+    tour_slug = serializers.CharField(source='target.slug', read_only=True)
+    tour_price = serializers.CharField(source='target.price', read_only=True)
+    tour_img = serializers.URLField(source='target.img_preview_url', read_only=True)
+    tour_title = serializers.CharField(source='target.title', read_only=True)
+
+    class Meta:
+        model = Favourites
+        fields = '__all__'

@@ -19,7 +19,7 @@ const authApi = axios.create({
 })
 
 authApi.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = Cookies.get('access_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
@@ -46,7 +46,7 @@ authApi.interceptors.request.use(
       }
 
       try {
-        const response = await axios.post('http://127.0.0.1:8000/api/token/refresh/', 
+        const response = await axios.post('http://127.0.0.1:8000/api/token/refresh/',
           { refresh: refreshToken },
           {
             headers: {
@@ -59,7 +59,7 @@ authApi.interceptors.request.use(
 
         const { access } = response.data
 
-        Cookies.set('access_token', access, { expires: 1 / 48 })
+        Cookies.set('access_token', access, { expires: 14 })
 
         originalRequest.headers.Authorization = `Bearer ${access}`
         return authApi(originalRequest)

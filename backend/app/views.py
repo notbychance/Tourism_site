@@ -195,7 +195,7 @@ class UserDetailView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class FavouritesAPIView(generics.GenericAPIView):    
+class FavouritesAPIView(generics.GenericAPIView):
     def get_permissions(self):
         if self.request.method in ['POST', 'DELETE']:
             return [IsAuthenticated()]
@@ -229,3 +229,27 @@ class FavouritesAPIView(generics.GenericAPIView):
             target__slug=slug
         ).delete()
         return Response({'is_favorite': False}, status=status.HTTP_200_OK)
+
+
+class FavouriteViewSet(viewsets.GenericViewSet):
+    serializer_class = FavouriteSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'delete', 'head', 'options']
+
+    def get_queryset(self):
+        return Favourites.objects.select_related('target').filter(customer=self.request.user)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = FavouriteSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=204)
+
+    @action(detail=False, methods=['get'], url_path='clear')
+    def clear(self, request, *args, **kwargs):
+        self.get_queryset().delete()
+        return Response(status=204)

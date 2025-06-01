@@ -93,8 +93,8 @@ export default {
 
     // Инициалы пользователя для аватара
     const userInitials = computed(() => {
-      if (!user.value.credentials) return 'U';
-      const parts = user.value.credentials.split(' ');
+      if (!user.value.username) return 'U';
+      const parts = user.value.username.split(' ');
       return parts
         .slice(0, 2)
         .map(p => p[0])

@@ -89,7 +89,7 @@ export default {
                     username: this.form.username,
                     password: this.form.password
                 })
-                Cookie.set('access_token', response.data.access, { expires: 1/48 })
+                Cookie.set('access_token', response.data.access, { expires: 14 })
                 Cookie.set('refresh_token', response.data.refresh, { expires: 14 })
 
                 this.$router.push('/tours');

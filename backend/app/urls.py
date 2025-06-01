@@ -2,19 +2,21 @@ from rest_framework.routers import DefaultRouter
 
 from app import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from django.urls import path
+from django.urls import path, include
 
 from .addons import SlugRouter
 from .views import *
 
 router = DefaultRouter()
-# router.register(r'customer', CustomerViewSet, basename='customer')
+router.register(r'favourite', FavouriteViewSet, basename='favourites')
 
 slug_router = SlugRouter()
 slug_router.register(r'company', CompanyViewSet, basename='company')
 slug_router.register(r'tour', TourViewSet, basename='tour')
 
 urlpatterns = [
+    path('', include(router.urls)),
+    path('', include(slug_router.urls)),
     path('social-media-type/', SocialMediaTypeListView.as_view()),
     path('reservation-status-type/', ReservationStatusListView.as_view()),
     path('country/', CountryListView.as_view()),
@@ -22,8 +24,5 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain'),
     path('user/', UserDetailView.as_view(), name='user_detail'),
-    path('favourite/<slug:slug>/', FavouritesAPIView.as_view(), name='favourites')
+    path('favourites/<slug:slug>/', FavouritesAPIView.as_view(), name='toggle_favourite')
 ]
-
-urlpatterns += router.urls
-urlpatterns += slug_router.urls

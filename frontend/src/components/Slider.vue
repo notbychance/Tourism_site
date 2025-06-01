@@ -75,7 +75,7 @@ export default {
             return new Intl.NumberFormat('ru-RU').format(price) + ' ₽';
         },
         handleImageError(event) {
-            event.target.src = require('@/assets/images/default-tour.jpg');
+            event.target.src = require('../assets/images/default-tour.jpg');
         },
         handleTourClick(tour) {
             this.$emit('tour-click', tour.slug);
