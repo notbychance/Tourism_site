@@ -5,10 +5,11 @@ import TourPage from '../views/TourPage.vue'
 import AuthPage from '../views/AuthPage.vue'
 import FavouritePage from '../views/FavouritePage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
+import CompanyListPage from '../views/CompanyListPage.vue'
 
 const routes = [
   { path: '/company/:slug', component: LandingPage },
-  { path: '/company', name: 'companies', component: LandingPage },
+  { path: '/company', name: 'companies', component: CompanyListPage },
   { path: '/tours/:slug', component: TourPage },
   { path: '/tours', name: 'tours', component: TourListPage },
   { path: '/auth', name: "auth", component: AuthPage },

@@ -10,6 +10,7 @@
 
         <nav class="main-nav">
           <router-link to="/tours" class="nav-link">Туры</router-link>
+          <router-link to="/company" class="nav-link">Компании</router-link>
           <!-- Другие навигационные ссылки при необходимости -->
         </nav>
       </div>

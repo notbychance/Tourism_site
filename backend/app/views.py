@@ -39,8 +39,11 @@ class CompanyViewSet(viewsets.ModelViewSet):
                  )
     )
     serializer_class = CompanySerializer
+    pagination_class = PageNumberPagination
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CompanyFilter
 
 
 class TourViewSet(viewsets.ModelViewSet):
