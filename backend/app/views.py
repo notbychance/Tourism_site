@@ -33,17 +33,34 @@ class SocialMediaViewSet(viewsets.ModelViewSet):
 
 
 class CompanyViewSet(viewsets.ModelViewSet):
-    queryset = Company.objects.prefetch_related(
-        Prefetch('socialmedia_set',
-                 queryset=SocialMedia.objects.select_related('media_type')
-                 )
-    )
+    queryset = Company.objects.all()
     serializer_class = CompanySerializer
     pagination_class = PageNumberPagination
     lookup_field = 'slug'
     lookup_url_kwarg = 'slug'
     filter_backends = [DjangoFilterBackend]
     filterset_class = CompanyFilter
+    http_method_names = ['get', 'head', 'options']
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return CompanyFullSerializer
+        return super().get_serializer_class()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.action == 'retrieve':
+            queryset = queryset.prefetch_related(
+                Prefetch('socialmedia_set',
+                        queryset=SocialMedia.objects.select_related('media_type')
+                       )
+            )
+        return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class TourViewSet(viewsets.ModelViewSet):

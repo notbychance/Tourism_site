@@ -63,6 +63,15 @@ class SocialMediaSerializer(serializers.ModelSerializer):
 
 
 class CompanySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Company
+        exclude = ['id']
+        extra_kwargs = {
+            'slug': {'read_only': True},
+        }
+
+
+class CompanyFullSerializer(serializers.ModelSerializer):
     social_media = SocialMediaSerializer(
         source='socialmedia_set',  # Указываем обратное отношение
         many=True,
@@ -141,7 +150,8 @@ class CountrySerializer(serializers.ModelSerializer):
 class FavouriteSerializer(serializers.ModelSerializer):
     tour_slug = serializers.CharField(source='target.slug', read_only=True)
     tour_price = serializers.CharField(source='target.price', read_only=True)
-    tour_img = serializers.URLField(source='target.img_preview_url', read_only=True)
+    tour_img = serializers.URLField(
+        source='target.img_preview_url', read_only=True)
     tour_title = serializers.CharField(source='target.title', read_only=True)
 
     class Meta:
