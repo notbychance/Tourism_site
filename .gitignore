@@ -1,6 +1,4 @@
 # Django (Python)
-backend/*.pyc
-backend/__pycache__/
 backend/*.sqlite3
 backend/*.pyo
 backend/*.pyd
@@ -12,10 +10,10 @@ backend/.env.prod
 backend/venv/
 backend/env/
 backend/.venv/
-backend/*.log
-backend/media/
-backend/staticfiles/
-backend/.DS_Store
+backend/backend/__pycache__/
+backend/app/__pycache__/
+backend/templates/
+backend/migrations/
 
 # Vue.js (Node.js)
 frontend/node_modules/
@@ -26,21 +24,9 @@ frontend/*.local
 frontend/npm-debug.log*
 frontend/yarn-debug.log*
 frontend/yarn-error.log*
-frontend/.vscode/
-
-# PyCharm
-backend/.idea/
-backend/*.iml
-backend/*.ipr
-backend/*.iws
 
 # VSCode
 frontend/.vscode/
-!frontend/.vscode/settings.json
-!frontend/.vscode/tasks.json
-!frontend/.vscode/launch.json
-!frontend/.vscode/extensions.json
 
 # Общие системные файлы
-.DS_Store
-Thumbs.db
+.bat

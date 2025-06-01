@@ -42,7 +42,7 @@ export default {
             this.error = ''
 
             try {
-                const response = await api.post('token/', {
+                const response = await api.post('auth/login/', {
                     username: this.form.username,
                     password: this.form.password
                 })

@@ -75,7 +75,7 @@ export default {
             this.success = ''
 
             try {
-                let response = await api.post('register/', {
+                let response = await api.post('auth/register/', {
                     phone: this.form.phone,
                     email: this.form.email,
                     username: this.form.username,
@@ -85,7 +85,7 @@ export default {
                 this.success = 'Регистрация успешна!'
                 // Перенаправление или очистка формы
 
-                response = await api.post('token/', {
+                response = await api.post('auth/login/', {
                     username: this.form.username,
                     password: this.form.password
                 })

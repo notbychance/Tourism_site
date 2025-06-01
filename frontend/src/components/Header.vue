@@ -75,7 +75,7 @@ export default {
       if (!checkAuth()) return;
 
       try {
-        const response = await authApi.get('user/');
+        const response = await authApi.get('auth/user/');
         user.value = response.data;
       } catch (error) {
         isAuthenticated.value = false;

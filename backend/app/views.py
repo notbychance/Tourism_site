@@ -1,30 +1,46 @@
 from django.db.models import Prefetch, Count, Q
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, mixins
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from app.models import *
 from app.serializers import *
 from app.filters import *
 
 
-class SocialMediaTypeListView(generics.ListAPIView):
+class SocialMediaTypeViewSet(viewsets.GenericViewSet):
     queryset = SocialMediaType.objects.all()
     serializer_class = SocialMediaTypeSerializer
 
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data)
 
-class ReservationStatusListView(generics.ListAPIView):
+
+class ReservationStatusViewSet(viewsets.GenericViewSet):
     queryset = ReservationStatus.objects.all()
     serializer_class = ReservationStatusSerializer
 
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data)
 
-class CountryListView(generics.ListAPIView):
+
+class CountryViewSet(viewsets.GenericViewSet):
     queryset = Country.objects.all()
     serializer_class = CountrySerializer
+
+    def list(self, request, *args, **kwargs):
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data)
 
 
 class SocialMediaViewSet(viewsets.ModelViewSet):
@@ -52,8 +68,9 @@ class CompanyViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             queryset = queryset.prefetch_related(
                 Prefetch('socialmedia_set',
-                        queryset=SocialMedia.objects.select_related('media_type')
-                       )
+                         queryset=SocialMedia.objects.select_related(
+                             'media_type')
+                         )
             )
         return queryset
 
@@ -188,11 +205,26 @@ class ReservationViewSet(viewsets.ModelViewSet):
     serializer_class = ReservationSerializer
 
 
-class UserRegistrationView(generics.CreateAPIView):
-    serializer_class = UserRegisterSerializer
+class AuthViewSet(viewsets.GenericViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+    def get_permissions(self):
+        if self.action in ['user', 'list']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    @action(detail=False, methods=['post'], url_path='login')
+    def login(self, request):
+        return TokenObtainPairView.as_view()(request._request)
+
+    @action(detail=False, methods=['post'], url_path='refresh')
+    def refresh(self, request):
+        return TokenRefreshView.as_view()(request._request)
+
+    @action(detail=False, methods=['post'], url_path='register')
+    def register(self, request, *args, **kwargs):
+        serializer = UserRegisterSerializer(request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
@@ -205,24 +237,41 @@ class UserRegistrationView(generics.CreateAPIView):
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
-
-class UserDetailView(generics.GenericAPIView):
-    serializer_class = UserSerializer
-
-    def get(self, request):
-        user = request.user
+    @action(detail=False, methods=['get'], url_path='user')
+    def user(self, request):
+        user = self.get_queryset().filter(id=request.user.id).first()
         serializer = self.get_serializer(user)
         return Response(serializer.data)
 
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data)
 
-class FavouritesAPIView(generics.GenericAPIView):
+
+class FavouritesViewsSet(viewsets.GenericViewSet):
+    queryset = Favourites.objects.all()
+    serializer_class = FavouriteSerializer
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'slug'
+
     def get_permissions(self):
-        if self.request.method in ['POST', 'DELETE']:
+        if self.action in ['add', 'remove']:
             return [IsAuthenticated()]
         return super().get_permissions()
+    
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        instance = self.get_queryset()
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data)
+        
 
-    def get(self, request, *args, **kwargs):
-        slug = kwargs.get('slug')
+    @action(detail=True, methods=['get'], url_path='check')
+    def check(self, request, slug=None):
         response = {'is_favorite': False}
 
         if request.user.is_authenticated:
@@ -233,8 +282,9 @@ class FavouritesAPIView(generics.GenericAPIView):
 
         return Response(response)
 
-    def post(self, request, *args, **kwargs):
-        slug = kwargs.get('slug')
+    
+    @action(detail=True, methods=['post'], url_path='add')
+    def add(self, request, slug=None):
         tour = get_object_or_404(Tour, slug=slug)
         Favourites.objects.get_or_create(
             customer=request.user,
@@ -242,8 +292,9 @@ class FavouritesAPIView(generics.GenericAPIView):
         )
         return Response({'is_favorite': True}, status=status.HTTP_201_CREATED)
 
-    def delete(self, request, *args, **kwargs):
-        slug = kwargs.get('slug')
+    
+    @action(detail=True, methods=['delete'], url_path='remove')
+    def remove(self, request, slug=None):
         Favourites.objects.filter(
             customer=request.user,
             target__slug=slug

@@ -144,7 +144,7 @@ export default {
     methods: {
         async fetchUserData() {
             try {
-                const response = await authApi.get('user/')
+                const response = await authApi.get('auth/user/')
                 this.user = response.data
                 this.resetFormData()
             } catch (error) {
