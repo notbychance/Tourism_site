@@ -26,9 +26,12 @@
                         </router-link>
                     </span>
                     <span class="country">
-                        <router-link :to="`/country/${tour.basic_info.country_slug}`">
+                        <div>
                             {{ tour.basic_info.country_name }}
-                        </router-link>
+                        </div>
+                        <!-- <router-link :to="`/tours/?country=${tour.basic_info.country_name}`">
+                            {{ tour.basic_info.country_name }}
+                        </router-link> -->
                     </span>
                     <span class="favorites">
                         ♡ {{ tour.basic_info.favourites_count }}
@@ -108,6 +111,7 @@ import { useRoute } from 'vue-router'
 import { api, authApi } from '../api/api.js'
 import Header from '../components/Header.vue'
 import Footer from '../components/Footer.vue'
+import Cookies from 'js-cookie'
 // import BookingModal from '@/components/BookingModal.vue'
 
 const route = useRoute()
@@ -135,7 +139,7 @@ const fetchTour = async () => {
 
 const checkFavoriteStatus = async () => {
     try {
-        const response = await api.get(`favourite/${route.params.slug}/`)
+        const response = await (Cookies.get('refresh_token') ? authApi : api).get(`favourite/${route.params.slug}/`)
         isFavorite.value = response.data.is_favorite
     } catch (err) {
         console.error('Ошибка проверки избранного:', err)

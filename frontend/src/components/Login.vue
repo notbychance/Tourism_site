@@ -4,7 +4,7 @@
         <form @submit.prevent="handleLogin">
             <div class="form-group">
                 <label>Логин:</label>
-                <input v-model="form.login" type="text" required placeholder="ivan_2023">
+                <input v-model="form.username" type="text" required placeholder="ivan_2023">
             </div>
 
             <div class="form-group">
@@ -29,7 +29,7 @@ export default {
     data() {
         return {
             form: {
-                login: '',
+                username: '',
                 password: ''
             },
             loading: false,
@@ -42,14 +42,14 @@ export default {
             this.error = ''
 
             try {
-                const response = await api.post('login/', {
-                    login: this.form.login,
+                const response = await api.post('token/', {
+                    username: this.form.username,
                     password: this.form.password
                 })
 
                 // Сохраняем токен (пример для JWT)
-                Cookie.set('access_token', response.data.tokens.access, { expires: 1/48 })
-                Cookie.set('refresh_token', response.data.tokens.refresh, { expires: 14 })
+                Cookie.set('access_token', response.data.access, { expires: 1/48 })
+                Cookie.set('refresh_token', response.data.refresh, { expires: 14 })
 
                 // Перенаправление после успешного входа
                 this.$router.push('/tours');

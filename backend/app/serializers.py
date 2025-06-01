@@ -1,7 +1,5 @@
 from django.utils import timezone
-from rest_framework import serializers, exceptions
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from django.core.validators import validate_email
+from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from app.models import *
@@ -20,7 +18,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
-            is_api_user=True
+            is_api_user=True,
+            phone=validated_data['phone']
         )
         return user
 
@@ -128,36 +127,6 @@ class ReservationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reservation
         exclude = ['id']
-
-
-class CustomerTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['login'] = user.login
-        token['email'] = user.email
-        return token
-
-    def validate(self, attrs):
-        login = attrs.get('username')
-        password = attrs.get('password')
-
-        try:
-            customer = Customer.objects.get(login=login)
-        except Customer.DoesNotExist:
-            raise serializers.ValidationError(
-                'Пользователь с таким логином не найден')
-
-        if not customer.check_password(password):
-            raise serializers.ValidationError('Неверный пароль')
-
-        data = {}
-        refresh = self.get_token(customer)
-
-        data['refresh'] = str(refresh)
-        data['access'] = str(refresh.access_token)
-
-        return data
 
 
 class CountrySerializer(serializers.ModelSerializer):

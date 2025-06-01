@@ -1,7 +1,8 @@
 from rest_framework.routers import DefaultRouter
 
 from app import views
-from django.urls import  path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.urls import path
 
 from .addons import SlugRouter
 from .views import *
@@ -12,7 +13,6 @@ router = DefaultRouter()
 slug_router = SlugRouter()
 slug_router.register(r'company', CompanyViewSet, basename='company')
 slug_router.register(r'tour', TourViewSet, basename='tour')
-slug_router.register(r'favourite', FavouritesViewSet, basename='favourite')
 
 urlpatterns = [
     path('social-media-type/', SocialMediaTypeListView.as_view()),
@@ -21,7 +21,8 @@ urlpatterns = [
     path('register/', UserRegistrationView.as_view(), name='register'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain'),
-    path('user/', UserDetailView.as_view(), name='customer_detail')
+    path('user/', UserDetailView.as_view(), name='user_detail'),
+    path('favourite/<slug:slug>/', FavouritesAPIView.as_view(), name='favourites')
 ]
 
 urlpatterns += router.urls

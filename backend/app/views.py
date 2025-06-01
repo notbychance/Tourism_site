@@ -4,26 +4,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from app.models import *
 from app.serializers import *
 from app.filters import *
-
-
-# class CustomerViewSet(viewsets.ModelViewSet):
-#     queryset = Customer.objects.all()
-#     serializer_class = CustomerSerializer
-
-#     def list(self, request, *args, **kwargs):
-#         return Response(
-#             {"detail": "Listing all customers is not allowed."},
-#             status=status.HTTP_403_FORBIDDEN
-#         )
 
 
 class SocialMediaTypeListView(generics.ListAPIView):
@@ -209,16 +195,14 @@ class UserDetailView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-class FavouritesViewSet(viewsets.ViewSet):
-    lookup_field = 'slug'
-    lookup_url_kwarg = 'slug'
-
+class FavouritesAPIView(generics.GenericAPIView):    
     def get_permissions(self):
         if self.request.method in ['POST', 'DELETE']:
             return [IsAuthenticated()]
         return super().get_permissions()
 
-    def retrieve(self, request, slug=None):
+    def get(self, request, *args, **kwargs):
+        slug = kwargs.get('slug')
         response = {'is_favorite': False}
 
         if request.user.is_authenticated:
@@ -229,7 +213,8 @@ class FavouritesViewSet(viewsets.ViewSet):
 
         return Response(response)
 
-    def create(self, request, slug=None):
+    def post(self, request, *args, **kwargs):
+        slug = kwargs.get('slug')
         tour = get_object_or_404(Tour, slug=slug)
         Favourites.objects.get_or_create(
             customer=request.user,
@@ -237,7 +222,8 @@ class FavouritesViewSet(viewsets.ViewSet):
         )
         return Response({'is_favorite': True}, status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, slug=None):
+    def delete(self, request, *args, **kwargs):
+        slug = kwargs.get('slug')
         Favourites.objects.filter(
             customer=request.user,
             target__slug=slug

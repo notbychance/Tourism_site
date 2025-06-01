@@ -10,7 +10,7 @@
                 <!-- Фильтр по странам -->
                 <div class="filter-item">
                     <label>Страны:</label>
-                    <MultiSelect v-model="selectedCountries" :options="availableCountries" :enable-search="true" />
+                    <MultiSelect v-model="selectedCountries" :options="availableCountries" :enable-search="true"/>
                 </div>
 
                 <!-- Ценовой диапазон -->

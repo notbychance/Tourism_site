@@ -4,7 +4,7 @@
         <form @submit.prevent="handleRegister">
             <div class="form-group">
                 <label>ФИО:</label>
-                <input v-model="form.credentials" type="text" required placeholder="Иван Иванов">
+                <input v-model="form.phone" type="text" required placeholder="Иван Иванов">
             </div>
 
             <div class="form-group">
@@ -14,7 +14,7 @@
 
             <div class="form-group">
                 <label>Логин:</label>
-                <input v-model="form.login" type="text" required placeholder="ivan_2023">
+                <input v-model="form.username" type="text" required placeholder="ivan_2023">
             </div>
 
             <div class="form-group">
@@ -42,17 +42,15 @@
 <script>
 import { api } from '../api/api.js'
 import Cookie from 'js-cookie'
-import { useRouter } from 'vue-router';
 
 export default {
     data() {
         return {
             form: {
-                credentials: '',
+                phone: '',
                 email: '',
-                login: '',
-                password: '',
-                password_confirm: ''
+                username: '',
+                password: ''
             },
             loading: false,
             error: '',
@@ -77,18 +75,22 @@ export default {
             this.success = ''
 
             try {
-                const response = await api.post('register/', {
-                    credentials: this.form.credentials,
+                let response = await api.post('register/', {
+                    phone: this.form.phone,
                     email: this.form.email,
-                    login: this.form.login,
+                    username: this.form.username,
                     password: this.form.password,
-                    password_confirm: this.form.password_confirm
                 })
 
                 this.success = 'Регистрация успешна!'
                 // Перенаправление или очистка формы
-                Cookie.set('access_token', response.data.tokens.access, { expires: 1/48 })
-                Cookie.set('refresh_token', response.data.tokens.refresh, { expires: 14 })
+
+                response = await api.post('token/', {
+                    username: this.form.username,
+                    password: this.form.password
+                })
+                Cookie.set('access_token', response.data.access, { expires: 1/48 })
+                Cookie.set('refresh_token', response.data.refresh, { expires: 14 })
 
                 this.$router.push('/tours');
             } catch (err) {

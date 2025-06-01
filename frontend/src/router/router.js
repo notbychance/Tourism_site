@@ -10,6 +10,7 @@ const routes = [
   { path: '/tours/:slug', component: TourPage },
   { path: '/tours', name: 'tours', component: TourListPage },
   { path: '/auth', name: "auth", component: AuthPage },
+  { path: '/whishlist', name='whishlist', }
   { path: '/', name: 'main', component: LandingPage, exact: true },
 ]
 
