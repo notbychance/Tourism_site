@@ -123,7 +123,7 @@ const showBookingModal = ref(false)
 
 const fetchTour = async () => {
     try {
-        const response = await api.get(`/tour/${route.params.slug}/full`)
+        const response = await api.get(`tour/${route.params.slug}/full/`)
         tour.value = response.data
         checkFavoriteStatus()
     } catch (err) {
@@ -135,7 +135,7 @@ const fetchTour = async () => {
 
 const checkFavoriteStatus = async () => {
     try {
-        const response = await authApi.get(`/tour/${tour.value.basic_info.slug}/favorite/`)
+        const response = await api.get(`favourite/${route.params.slug}/`)
         isFavorite.value = response.data.is_favorite
     } catch (err) {
         console.error('Ошибка проверки избранного:', err)
@@ -145,7 +145,7 @@ const checkFavoriteStatus = async () => {
 const toggleFavorite = async () => {
     try {
         const method = isFavorite.value ? 'delete' : 'post'
-        await api[method](`/api/tours/${tour.value.basic_info.slug}/favorite/`)
+        await authApi[method](`favourite/${route.params.slug}/`)
         isFavorite.value = !isFavorite.value
         // Обновляем счетчик
         if (isFavorite.value) {

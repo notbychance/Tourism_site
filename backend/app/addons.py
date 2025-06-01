@@ -1,9 +1,7 @@
-# core/utils/slug_helpers.py
 import itertools
 
 from rest_framework.routers import DefaultRouter
 from transliterate import slugify as transliterate_slugify
-from django.contrib.auth.models import BaseUserManager
 
 
 class SlugRouter(DefaultRouter):
@@ -21,7 +19,8 @@ def unique_slugify(instance, slug_field, source_field):
     Генерация уникального slug на основе source_field.
     Автоматически добавляет суффикс (-1, -2) при дубликатах.
     """
-    slug = transliterate_slugify(getattr(instance, source_field), language_code='ru')
+    slug = transliterate_slugify(
+        getattr(instance, source_field), language_code='ru')
     unique_slug = slug
 
     for i in itertools.count(1):
@@ -30,17 +29,3 @@ def unique_slugify(instance, slug_field, source_field):
         unique_slug = f'{slug}-{i}'
 
     return unique_slug
-
-
-class CustomerManager(BaseUserManager):
-    def create_user(self, login, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('Email обязателен')
-        customer = self.model(
-            email=self.normalize_email(email),
-            login=login,
-            **extra_fields
-        )
-        customer.set_password(password)
-        customer.save(using=self._db)
-        return customer

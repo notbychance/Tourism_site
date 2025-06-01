@@ -102,8 +102,8 @@ const fetchInitialData = async () => {
 
         // Параллельно получаем страны и туры
         const [countriesRes, toursRes] = await Promise.all([
-            api.get('/country'),
-            api.get('/tour', {
+            api.get('country/'),
+            api.get('tour/', {
                 params: { page: currentPage.value }
             })
         ]);
@@ -129,7 +129,7 @@ const applyFilters = async () => {
         loading.value = true;
 
         const params = buildParams();
-        const response = await api.get('/tour', { params });
+        const response = await api.get('tour/', { params });
 
         tours.value = response.data.results;
         hasNextPage.value = Boolean(response.data.next);
@@ -158,7 +158,7 @@ const loadMoreTours = async () => {
         const params = buildParams();
         params.page = currentPage.value;
 
-        const response = await api.get('/tour', { params });
+        const response = await api.get('tour/', { params });
 
         tours.value = [...tours.value, ...response.data.results];
         hasNextPage.value = Boolean(response.data.next);

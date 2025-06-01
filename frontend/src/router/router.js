@@ -1,16 +1,20 @@
-import { createRouter, createWebHistory  } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import LandingPage from '../views/LandingPage.vue'
-import TourList from '../views/TourList.vue'
+import TourListPage from '../views/TourListPage.vue'
 import TourPage from '../views/TourPage.vue'
+import AuthPage from '../views/AuthPage.vue'
 
 const routes = [
-  { path: '/tours', name:'tours', component: TourList },
-  { path: '/tours/:slug', component:TourPage },
-  { path: '/', name:'main', component: LandingPage, exact: true },
+  { path: '/company/:slug', component: LandingPage },
+  { path: '/company', name: 'companies', component: LandingPage },
+  { path: '/tours/:slug', component: TourPage },
+  { path: '/tours', name: 'tours', component: TourListPage },
+  { path: '/auth', name: "auth", component: AuthPage },
+  { path: '/', name: 'main', component: LandingPage, exact: true },
 ]
 
 const router = createRouter({
-  history: createWebHistory (),
+  history: createWebHistory(),
   routes
 })
 

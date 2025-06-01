@@ -2,83 +2,33 @@ from django.utils import timezone
 from rest_framework import serializers, exceptions
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 
 from app.models import *
 
+User = get_user_model()
 
-class CustomerRegistrationSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(
-        write_only=True, required=True, min_length=8)
-    password_confirm = serializers.CharField(write_only=True, required=True)
 
+class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Customer
-        fields = ['credentials', 'email', 'login',
-                  'password', 'password_confirm']
-        extra_kwargs = {
-            'credentials': {'required': True},
-            'email': {'required': True},
-            'login': {'required': True},
-        }
-
-    def validate(self, attrs):
-        # Проверка совпадения паролей
-        if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError(
-                {"password": "Пароли не совпадают"})
-
-        # Проверка уникальности email
-        if Customer.objects.filter(email=attrs['email']).exists():
-            raise serializers.ValidationError(
-                {"email": "Этот email уже используется"})
-
-        # Проверка уникальности login
-        if Customer.objects.filter(login=attrs['login']).exists():
-            raise serializers.ValidationError(
-                {"login": "Этот логин уже занят"})
-
-        # Валидация email
-        try:
-            validate_email(attrs['email'])
-        except ValidationError:
-            raise serializers.ValidationError({"email": "Некорректный email"})
-
-        return attrs
+        model = User
+        fields = ['username', 'email', 'password', 'phone']
+        extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        # Удаляем подтверждение пароля
-        validated_data.pop('password_confirm')
-
-        # Хешируем пароль
-        password = validated_data.pop('password')
-        customer = Customer(**validated_data)
-        customer.set_password(password)
-        customer.save()
-
-        return customer
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            is_api_user=True
+        )
+        return user
 
 
-class CustomerLoginSerializer(serializers.Serializer):
-    login = serializers.CharField(required=True)
-    password = serializers.CharField(required=True, write_only=True)
-
-    def validate(self, attrs):
-        login = attrs.get('login')
-        password = attrs.get('password')
-
-        try:
-            customer = Customer.objects.get(login=login)
-        except Customer.DoesNotExist:
-            raise serializers.ValidationError(
-                {"login": "Неверный логин или пароль"})
-
-        if not customer.check_password(password):
-            raise serializers.ValidationError(
-                {"login": "Неверный логин или пароль"})
-
-        attrs['customer'] = customer
-        return attrs
+class UserSerializer(serializers.Serializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'phone', 'avatar']
 
 
 class SocialMediaTypeSerializer(serializers.ModelSerializer):
@@ -180,12 +130,34 @@ class ReservationSerializer(serializers.ModelSerializer):
         exclude = ['id']
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+class CustomerTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token['login'] = user.login
+        token['email'] = user.email
         return token
+
+    def validate(self, attrs):
+        login = attrs.get('username')
+        password = attrs.get('password')
+
+        try:
+            customer = Customer.objects.get(login=login)
+        except Customer.DoesNotExist:
+            raise serializers.ValidationError(
+                'Пользователь с таким логином не найден')
+
+        if not customer.check_password(password):
+            raise serializers.ValidationError('Неверный пароль')
+
+        data = {}
+        refresh = self.get_token(customer)
+
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+
+        return data
 
 
 class CountrySerializer(serializers.ModelSerializer):

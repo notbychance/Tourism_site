@@ -52,7 +52,7 @@ const router = useRouter()
 // Загрузка туров
 const fetchTours = async () => {
   try {
-    const response = await api.get('/tour/popular')
+    const response = await api.get('tour/popular/')
     tours.value = response.data
   } catch (err) {
     console.error('Ошибка загрузки туров:', err)

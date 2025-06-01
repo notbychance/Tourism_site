@@ -1,11 +1,14 @@
 from django.db.models import Prefetch, Count, Q
 from rest_framework import viewsets, status, generics
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from app.models import *
 from app.serializers import *
@@ -65,11 +68,76 @@ class TourViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_class = TourFilter
 
+    @action(detail=True, methods=['get'], url_path='favourite')
+    def get_favourite(self, request, slug=None):
+        response_data = {'is_favorite': False}
+
+        if not request.user.is_authenticated:
+            return Response(response_data)
+
+        try:
+            tour = self.get_object()
+            response_data['is_favorite'] = Favourites.objects.filter(
+                customer=request.user,
+                target=tour
+            ).exists()
+        except Exception:
+            pass
+
+        return Response(response_data)
+
+    @action(detail=True, methods=['post'], url_path='favourite')
+    def set_favourite(self, request, slug=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication required'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        tour = self.get_object()
+        customer = request.user
+
+        if not Favourites.objects.filter(customer=customer, target=tour).exists():
+            Favourites.objects.create(customer=customer, target=tour)
+
+        return Response(
+            {'is_favorite': True},
+            status=status.HTTP_201_CREATED
+        )
+
+    @action(detail=True, methods=['delete'], url_path='favourite')
+    def delete_favourite(self, request, slug=None):
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentication required'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        tour = self.get_object()
+        customer = request.user
+        deleted, _ = Favourites.objects.filter(
+            customer=customer,
+            target=tour
+        ).delete()
+
+        if deleted == 0:
+            return Response(
+                {'detail': 'Tour was not in favorites'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(
+            {'is_favorite': False},
+            status=status.HTTP_200_OK
+        )
+
     @action(detail=True, methods=['get'], url_path='full')
     def get_full_info(self, request, slug=None):
         desired_statuses = [ReservationStatus.PAID]
 
-        tour = Tour.objects.filter(slug=slug).select_related(
+        tour = Tour.objects.filter(slug=slug).annotate(
+            favourites_count=Count('favourites')
+        ).select_related(
             'tourinfo',
             'company',
             'country'
@@ -114,55 +182,64 @@ class ReservationViewSet(viewsets.ModelViewSet):
     serializer_class = ReservationSerializer
 
 
-class CustomerRegistrationView(generics.CreateAPIView):
-    serializer_class = CustomerRegistrationSerializer
+class UserRegistrationView(generics.CreateAPIView):
+    serializer_class = UserRegisterSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        customer = serializer.save()
-
-        # Генерация токенов
-        refresh = RefreshToken.for_user(customer)
+        user = serializer.save()
 
         response_data = {
-            'message': 'Регистрация успешна',
-            'customer': {
-                'credentials': customer.credentials,
-                'email': customer.email,
-                'login': customer.login
-            },
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            'message': 'Пользователь успешно создан',
+            'username': user.username,
+            'email': user.email,
+            'phone': user.phone
         }
 
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
-class CustomerLoginView(generics.GenericAPIView):
-    serializer_class = CustomerLoginSerializer
+class UserDetailView(generics.GenericAPIView):
+    serializer_class = UserSerializer
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        customer = serializer.validated_data['customer']
+    def get(self, request):
+        user = request.user
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
 
-        # Генерация токенов
-        refresh = MyTokenObtainPairSerializer.get_token(customer)
 
-        response_data = {
-            'message': 'Вход выполнен успешно',
-            'customer': {
-                'credentials': customer.credentials,
-                'email': customer.email,
-                'login': customer.login
-            },
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
-        }
+class FavouritesViewSet(viewsets.ViewSet):
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'slug'
 
-        return Response(response_data, status=status.HTTP_200_OK)
+    def get_permissions(self):
+        if self.request.method in ['POST', 'DELETE']:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def retrieve(self, request, slug=None):
+        response = {'is_favorite': False}
+
+        if request.user.is_authenticated:
+            response['is_favorite'] = Favourites.objects.filter(
+                customer=request.user,
+                target__slug=slug
+            ).exists()
+
+        return Response(response)
+
+    def create(self, request, slug=None):
+        tour = get_object_or_404(Tour, slug=slug)
+        Favourites.objects.get_or_create(
+            customer=request.user,
+            target=tour
+        )
+        return Response({'is_favorite': True}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, slug=None):
+        Favourites.objects.filter(
+            customer=request.user,
+            target__slug=slug
+        ).delete()
+        return Response({'is_favorite': False}, status=status.HTTP_200_OK)

@@ -1,38 +1,26 @@
 import datetime
 
-from django.core.validators import RegexValidator, MinLengthValidator
+from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.manager import Manager
-from django.contrib.auth.models import AbstractBaseUser
+from django.contrib.auth.models import AbstractUser
 
-from app.addons import unique_slugify, CustomerManager
+from app.addons import unique_slugify
 
 
 # Create your models here.
-class Customer(models.Model):
-    credentials = models.CharField(max_length=100)
-    email = models.EmailField(unique=True)
-    login = models.CharField(max_length=50, unique=True,
-                             validators=[RegexValidator(
-                                 regex='^[a-zA-Z0-9_]+$',
-                                 message='Логин может содержать только буквы, цифры и подчеркивания'
-                             )])
-    password_hash = models.CharField(max_length=128)
-
-    objects = CustomerManager()
+class User(AbstractUser):
+    phone = models.CharField(max_length=20, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True)
+    is_api_user = models.BooleanField(default=True)
     
-    def set_password(self, raw_password):
-        """Хеширует и сохраняет пароль."""
-        from django.contrib.auth.hashers import make_password
-        self.password_hash = make_password(raw_password)
-
-    def check_password(self, raw_password):
-        """Проверяет пароль."""
-        from django.contrib.auth.hashers import check_password
-        return check_password(raw_password, self.password_hash)
+    def save(self, *args, **kwargs):
+        if self.is_superuser or self.is_staff:
+            self.is_api_user = False
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.credentials
+        return self.username
 
 
 class SocialMediaType(models.Model):
@@ -161,7 +149,7 @@ class ReservationStatus(models.Model):
 
 
 class Reservation(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
     target = models.ForeignKey(TourTimeSpan, on_delete=models.CASCADE)
     status = models.ForeignKey(ReservationStatus, on_delete=models.CASCADE)
 
@@ -169,14 +157,14 @@ class Reservation(models.Model):
 
 
 class Favourites(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
     target = models.ForeignKey(Tour, on_delete=models.CASCADE)
 
     objects: Manager = models.Manager()
 
 
 class Feedback(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
     target = models.ForeignKey(Tour, on_delete=models.CASCADE)
     text = models.TextField()
     datetime = models.DateTimeField(auto_now_add=True)

@@ -7,7 +7,7 @@
           <!-- Замените на ваш логотип -->
           <span class="logo-text">TravelApp</span>
         </router-link>
-        
+
         <nav class="main-nav">
           <router-link to="/tours" class="nav-link">Туры</router-link>
           <!-- Другие навигационные ссылки при необходимости -->
@@ -17,33 +17,19 @@
       <!-- Правая часть: действия пользователя -->
       <div class="right-section">
         <!-- Корзина (только для авторизованных) -->
-        <router-link 
-          v-if="isAuthenticated"
-          to="/cart" 
-          class="action-icon"
-          aria-label="Корзина"
-        >
+        <router-link v-if="isAuthenticated" to="/cart" class="action-icon" aria-label="Корзина">
           <i class="icon-cart"></i>
           <span v-if="cartCount > 0" class="badge">{{ cartCount }}</span>
         </router-link>
 
         <!-- Избранное (только для авторизованных) -->
-        <router-link 
-          v-if="isAuthenticated"
-          to="/wishlist" 
-          class="action-icon"
-          aria-label="Избранное"
-        >
+        <router-link v-if="isAuthenticated" to="/wishlist" class="action-icon" aria-label="Избранное">
           <i class="icon-heart"></i>
         </router-link>
 
         <!-- Личный кабинет / Авторизация -->
         <div class="user-menu">
-          <router-link 
-            v-if="isAuthenticated"
-            to="/account" 
-            class="user-avatar"
-          >
+          <router-link v-if="isAuthenticated" to="/account" class="user-avatar">
             <img v-if="user.avatar" :src="user.avatar" :alt="user.name">
             <div v-else class="avatar-placeholder">
               {{ userInitials }}
@@ -51,8 +37,8 @@
           </router-link>
 
           <div v-else class="auth-buttons">
-            <router-link to="/login" class="auth-link">Войти</router-link>
-            <router-link to="/register" class="auth-link register">Регистрация</router-link>
+            <router-link to="/auth" class="auth-link">Войти</router-link>
+            <router-link to="/auth/?form=register" class="auth-link register">Регистрация</router-link>
           </div>
         </div>
       </div>
@@ -62,7 +48,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue';
-import axios from 'axios';
+import { authApi } from '../api/api.js';
 import Cookies from 'js-cookie';
 
 export default {
@@ -78,7 +64,7 @@ export default {
 
     // Проверка аутентификации
     const checkAuth = () => {
-      const token = Cookies.get('auth_token');
+      const token = Cookies.get('refresh_token');
       isAuthenticated.value = !!token;
       return !!token;
     };
@@ -86,44 +72,29 @@ export default {
     // Загрузка данных пользователя
     const fetchUserData = async () => {
       if (!checkAuth()) return;
-      
+
       try {
-        const response = await axios.get('/api/user/', {
-          headers: {
-            Authorization: `Bearer ${Cookies.get('auth_token')}`
-          }
-        });
+        const response = await authApi.get('customer/');
         user.value = response.data;
       } catch (error) {
-        console.error('Ошибка загрузки данных пользователя:', error);
-        // При ошибке авторизации очищаем токен
-        if (error.response && error.response.status === 401) {
-          Cookies.remove('auth_token');
-          isAuthenticated.value = false;
-        }
+        isAuthenticated.value = false;
       }
     };
 
     // Загрузка количества в корзине
     const fetchCartCount = async () => {
       if (!isAuthenticated.value) return;
-      
+
       try {
-        const response = await axios.get('/api/cart/count/', {
-          headers: {
-            Authorization: `Bearer ${Cookies.get('auth_token')}`
-          }
-        });
+        const response = await authApi.get('cart/count/');
         cartCount.value = response.data.count;
-      } catch (error) {
-        console.error('Ошибка загрузки корзины:', error);
-      }
+      } catch (error) { }
     };
 
     // Инициалы пользователя для аватара
     const userInitials = computed(() => {
-      if (!user.value.name) return 'U';
-      const parts = user.value.name.split(' ');
+      if (!user.value.credentials) return 'U';
+      const parts = user.value.credentials.split(' ');
       return parts
         .slice(0, 2)
         .map(p => p[0])
@@ -331,19 +302,19 @@ export default {
   .header-container {
     padding: 10px 15px;
   }
-  
+
   .left-section {
     gap: 20px;
   }
-  
+
   .main-nav {
     gap: 15px;
   }
-  
+
   .auth-buttons {
     gap: 10px;
   }
-  
+
   .auth-link {
     padding: 6px 10px;
     font-size: 14px;
