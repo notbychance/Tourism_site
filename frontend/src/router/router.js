@@ -6,9 +6,12 @@ import AuthPage from '../views/AuthPage.vue'
 import FavouritePage from '../views/FavouritePage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
 import CompanyListPage from '../views/CompanyListPage.vue'
+import CompanyPage from '../views/CompanyPage.vue'
+import CartPage from '../views/CartPage.vue'
 
 const routes = [
-  { path: '/company/:slug', component: LandingPage },
+  { path: '/cart', name: 'cart', component: CartPage },
+  { path: '/company/:slug', component: CompanyPage },
   { path: '/company', name: 'companies', component: CompanyListPage },
   { path: '/tours/:slug', component: TourPage },
   { path: '/tours', name: 'tours', component: TourListPage },

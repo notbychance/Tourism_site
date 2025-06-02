@@ -64,6 +64,10 @@
                         <svg class="icon"><!-- Иконка выхода --></svg>
                         Выйти из аккаунта
                     </button>
+                    <button @click="remove" class="btn-logout">
+                        <svg class="icon"><!-- Иконка выхода --></svg>
+                        Удалить аккаунт
+                    </button>
                 </div>
             </form>
         </div>
@@ -75,7 +79,7 @@
                 <form @submit.prevent="handlePasswordChange">
                     <div class="form-group">
                         <label>Текущий пароль:</label>
-                        <input v-model="passwordData.current_password" type="password" required>
+                        <input v-model="passwordData.password" type="password" required>
                     </div>
                     <div class="form-group">
                         <label>Новый пароль:</label>
@@ -131,7 +135,7 @@ export default {
             loading: false,
             changePasswordDialog: false,
             passwordData: {
-                current_password: '',
+                password: '',
                 new_password: '',
                 new_password_confirm: ''
             },
@@ -202,14 +206,12 @@ export default {
                     formData.append('avatar', this.$refs.avatarInput.files[0])
                 }
 
-                const response = await authApi.patch('user/', formData)
+                const response = await authApi.patch('auth/update/', formData)
 
                 this.user = response.data
                 this.editMode = false
-                this.$toast.success('Профиль успешно обновлен')
             } catch (error) {
                 console.error('Ошибка обновления профиля:', error)
-                this.$toast.error(error.response?.data?.message || 'Ошибка обновления профиля')
             } finally {
                 this.loading = false
             }
@@ -229,15 +231,12 @@ export default {
             try {
                 await authApi.delete('user/avatar/')
                 this.user.avatar = null
-                this.$toast.success('Аватар удален')
             } catch (error) {
                 console.error('Ошибка удаления аватара:', error)
-                this.$toast.error('Не удалось удалить аватар')
             }
         },
         async handlePasswordChange() {
             if (this.passwordData.new_password !== this.passwordData.new_password_confirm) {
-                this.$toast.error('Новые пароли не совпадают')
                 return
             }
 
@@ -246,14 +245,12 @@ export default {
                 await authApi.post('user/change-password/', this.passwordData)
                 this.changePasswordDialog = false
                 this.passwordData = {
-                    current_password: '',
+                    password: '',
                     new_password: '',
                     new_password_confirm: ''
                 }
-                this.$toast.success('Пароль успешно изменен')
             } catch (error) {
                 console.error('Ошибка смены пароля:', error)
-                this.$toast.error(error.response?.data?.message || 'Ошибка смены пароля')
             } finally {
                 this.passwordLoading = false
             }
@@ -265,6 +262,15 @@ export default {
                 this.$router.push('/auth')
             } catch (error) {
                 console.error('Ошибка выхода:', error)
+            }
+        },
+        async remove() {
+            try {
+                if (!confirm('Вы уверены, что хотите удалить аккаунт?')) return
+                await authApi.delete('auth/delete/')
+                this.logout()
+            } catch (error) {
+                console.error('Ошибка удаления:', error)
             }
         }
     }
@@ -435,30 +441,32 @@ export default {
 }
 
 .profile-actions {
-  margin-top: 40px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    display: flex;
+    column-gap: 20px;
 }
 
 .btn-logout {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: #f8f8f8;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  cursor: pointer;
-  color: #ff4444;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #ff4444;
 }
 
 .btn-logout:hover {
-  background: #ffeeee;
-  border-color: #ffcccc;
+    background: #ffeeee;
+    border-color: #ffcccc;
 }
 
 .icon {
-  width: 18px;
-  height: 18px;
+    width: 18px;
+    height: 18px;
 }
 </style>

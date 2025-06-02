@@ -1,5 +1,5 @@
 from django.db.models import Prefetch, Count, Q
-from rest_framework import viewsets, status, generics, mixins
+from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -70,14 +70,12 @@ class CompanyViewSet(viewsets.ModelViewSet):
                 Prefetch('socialmedia_set',
                          queryset=SocialMedia.objects.select_related(
                              'media_type')
+                         ),
+                Prefetch('tour_set',
+                         queryset=Tour.objects.all()
                          )
             )
         return queryset
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
 
 
 class TourViewSet(viewsets.ModelViewSet):
@@ -200,17 +198,12 @@ class TourViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.select_related('status')
-    serializer_class = ReservationSerializer
-
-
 class AuthViewSet(viewsets.GenericViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
 
     def get_permissions(self):
-        if self.action in ['user', 'list']:
+        if self.action in ['user', 'list', 'delete', 'change-password', 'update']:
             return [IsAuthenticated()]
         return super().get_permissions()
 
@@ -224,7 +217,7 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['post'], url_path='register')
     def register(self, request, *args, **kwargs):
-        serializer = UserRegisterSerializer(request.data)
+        serializer = UserRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
@@ -239,9 +232,88 @@ class AuthViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['get'], url_path='user')
     def user(self, request):
-        user = self.get_queryset().filter(id=request.user.id).first()
+        user = request.user
         serializer = self.get_serializer(user)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['delete'], url_path='delete')
+    def delete(self, request):
+        request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['post'], url_path='change-password')
+    def change_password(self, request):
+        user = request.user
+        serializer = UserChangePasswordSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.check_password(serializer.validated_data['password']):
+            return Response(
+                {"password": "Неверный текущий пароль"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+
+        return Response(
+            {"message": "Пароль успешно изменен"},
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['patch'], url_path='update')
+    def patch_user(self, request):
+        user = request.user
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'], url_path='avatar')
+    def delete_avatar(self, request):
+        user = request.user
+
+        if not user.avatar:
+            return Response(
+                {"detail": "Аватар отсутствует"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            # Удаляем файл с диска
+            if os.path.isfile(user.avatar.path):
+                os.remove(user.avatar.path)
+
+            # Очищаем поле в базе данных
+            user.avatar = None
+            user.save()
+
+            return Response(
+                {"detail": "Аватар успешно удален"},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {"detail": f"Ошибка при удалении аватара: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['update'], url_path='update')
+    def update_user(self, request, *args, **kwargs):
+        user = request.user
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(status=status.HTTP_200_OK)
 
     def list(self, request, *args, **kwargs):
         if not request.user.is_staff:
@@ -261,14 +333,13 @@ class FavouritesViewsSet(viewsets.GenericViewSet):
         if self.action in ['add', 'remove']:
             return [IsAuthenticated()]
         return super().get_permissions()
-    
+
     def list(self, request, *args, **kwargs):
         if not request.user.is_staff:
             return Response(status=status.HTTP_404_NOT_FOUND)
         instance = self.get_queryset()
         serializer = self.get_serializer(instance, many=True)
         return Response(serializer.data)
-        
 
     @action(detail=True, methods=['get'], url_path='check')
     def check(self, request, slug=None):
@@ -282,7 +353,6 @@ class FavouritesViewsSet(viewsets.GenericViewSet):
 
         return Response(response)
 
-    
     @action(detail=True, methods=['post'], url_path='add')
     def add(self, request, slug=None):
         tour = get_object_or_404(Tour, slug=slug)
@@ -292,14 +362,13 @@ class FavouritesViewsSet(viewsets.GenericViewSet):
         )
         return Response({'is_favorite': True}, status=status.HTTP_201_CREATED)
 
-    
     @action(detail=True, methods=['delete'], url_path='remove')
     def remove(self, request, slug=None):
         Favourites.objects.filter(
             customer=request.user,
             target__slug=slug
         ).delete()
-        return Response({'is_favorite': False}, status=status.HTTP_200_OK)
+        return Response({'is_favorite': False}, status=status.HTTP_204_NO_CONTENT)
 
 
 class FavouriteViewSet(viewsets.GenericViewSet):
@@ -324,3 +393,168 @@ class FavouriteViewSet(viewsets.GenericViewSet):
     def clear(self, request, *args, **kwargs):
         self.get_queryset().delete()
         return Response(status=204)
+
+
+class ReservationViewSet(viewsets.GenericViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ReservationSerializer
+    lookup_field = 'slug'
+    lookup_url_kwarg = 'slug'
+
+    def get_queryset(self):
+        queryset = Reservation.objects.select_related(
+            'target', 'status'
+        ).filter(customer=self.request.user)
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        paginator = PageNumberPagination()
+        desired_statuses = [ReservationStatus.WAITING]
+
+        instance = self.get_queryset().filter(status__status__in=desired_statuses)
+        page = paginator.paginate_queryset(instance, request)
+
+        serializer = self.get_serializer(instance, many=True)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(instance, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='count')
+    def count(self, request, *args, **kwargs):
+        desired_statuses = [ReservationStatus.WAITING]
+        count = self.get_queryset().filter(status__status__in=desired_statuses).count()
+        return Response(
+            {
+                'count': count
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['get'], url_path='history')
+    def history(self, request, *args, **kwargs):
+        paginator = PageNumberPagination()
+
+        queryset = self.get_queryset()
+        page = paginator.paginate_queryset(queryset, request)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='reserve')
+    def reserve(self, request, slug=None, *args, **kwargs):
+        instance = Tour.objects.prefetch_related(
+            Prefetch(
+                'tourtimespan_set',
+                queryset=TourTimeSpan.objects.order_by('-date_to')
+            )
+        ).get(slug=slug)
+
+        timespan = instance.tourtimespan_set.first()
+        customer = request.user
+        stat = ReservationStatus.objects.get(status=ReservationStatus.WAITING)
+        count = request.data.get('count')
+
+        Reservation.objects.create(
+            status=stat,
+            customer=customer,
+            target=timespan,
+            count=count if count else 1
+        )
+
+        return Response(status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['delete'], url_path='delete')
+    def delete(self, request, *args, **kwargs):
+        try:
+            reservation_id = request.data.get('id')
+            if not reservation_id:
+                return Response(
+                    {"error": "Reservation ID is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            deleted_count, _ = self.get_queryset().filter(
+                id=reservation_id
+            ).delete()
+
+            if deleted_count == 0:
+                return Response(
+                    {"error": "Reservation not found or not owned by user"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['patch'], url_path='update')
+    def update_count(self, request, *args, **kwargs):
+        try:
+            reservation_id = request.data.get('id')
+
+            try:
+                count = int(request.data.get('count', 1))
+            except (TypeError, ValueError):
+                return Response(
+                    {"error": "Count must be a valid integer"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not reservation_id:
+                return Response(
+                    {"error": "Reservation ID is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            item = self.get_queryset().filter(
+                id=reservation_id
+            ).first()
+
+            if not item:
+                return Response(
+                    {"error": "Reservation not found or not owned by user"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            if count <= 0:
+                return Response(
+                    {"error": "Count must be a positive integer"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            item.count = count
+            item.save()
+
+            return Response(status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['patch'], url_path='status')
+    def update_status(self, request, *args, **kwargs):
+        ids = request.data.get('ids', [])
+        if not isinstance(ids, list) or not ids:
+            return Response(
+                {"error": "A non-empty list of IDs is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        stat = ReservationStatus.objects.get(status=ReservationStatus.PAID)
+
+        query = self.get_queryset().filter(id__in=ids).update(status=stat)
+
+        return Response(status=status.HTTP_200_OK)

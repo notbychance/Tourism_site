@@ -152,6 +152,7 @@ class Reservation(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE)
     target = models.ForeignKey(TourTimeSpan, on_delete=models.CASCADE)
     status = models.ForeignKey(ReservationStatus, on_delete=models.CASCADE)
+    count = models.IntegerField()
 
     objects: Manager = models.Manager()
 

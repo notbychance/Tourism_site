@@ -15,3 +15,4 @@ router.register(r'social-media-type', SocialMediaTypeViewSet, basename='social_m
 router.register(r'reservation-status-type', ReservationStatusViewSet, basename='reservation_status_type')
 router.register(r'country', CountryViewSet, basename='country')
 router.register(r'auth', AuthViewSet, basename='auth')
+router.register(r'reservation', ReservationViewSet, basename='reservations')

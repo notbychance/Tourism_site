@@ -87,7 +87,7 @@ export default {
       if (!isAuthenticated.value) return;
 
       try {
-        const response = await authApi.get('cart/count/');
+        const response = await authApi.get('reservation/count/');
         cartCount.value = response.data.count;
       } catch (error) { }
     };
